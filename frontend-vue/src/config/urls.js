@@ -1,53 +1,56 @@
 /**
  * Centralized URL Configuration
- * Unico punto per configurare tutti gli URL del sistema
+ * Reads from environment variables injected at build-time by Vite
  */
 
-// 🌐 Network Configuration - MODIFY THESE FOR YOUR NETWORK
-const NETWORK_CONFIG = {
-  // Server IP address on your local network
-  SERVER_IP: '192.168.1.18',
+// Read from Vite env vars (injected at build time)
+const VENDING_IP = import.meta.env.VITE_DISTRIBUTOR_IP
+const API_PORT = import.meta.env.VITE_API_PORT || '8000'
+const FRONTEND_PORT = import.meta.env.VITE_FRONTEND_PORT || '3000'
+const SIMULATOR_PORT = import.meta.env.VITE_SIMULATOR_PORT || '1500'
+const VENDING_PORT = import.meta.env.VITE_VENDING_MACHINE_PORT || '1500'
 
-  // Vending machine IP (for production)
-  VENDING_MACHINE_IP: '192.168.1.65',
-
-  // Ports
-  PORTS: {
-    FRONTEND_DEV: 3001,
-    FRONTEND_PROD: 3000,
-    API_SERVER: 8000,
-    SIMULATOR: 1500,
-    VENDING_MACHINE: 1500
-  }
+// Validate required environment variables
+if (!VENDING_IP) {
+  console.error('❌ Missing required environment variable!')
+  console.error('Required: VITE_DISTRIBUTOR_IP')
+  console.error('Check frontend-vue/.env.development or .env.production')
 }
 
 /**
  * Detect current environment and return appropriate URLs
+ * Auto-detects server IP from window.location (no manual config needed!)
  */
 function getEnvironmentConfig() {
   const hostname = window.location.hostname
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
   const isDevelopment = import.meta.env.DEV
 
+  // Auto-detect server IP from current URL
+  // If you open http://192.168.1.18:3000, hostname is "192.168.1.18"
+  // If you open http://localhost:3000, hostname is "localhost"
+  const serverHost = hostname
+
   console.log('🌍 URL Config - Hostname:', hostname, '| Dev:', isDevelopment, '| Localhost:', isLocalhost)
 
   if (isLocalhost) {
-    // Running on development machine
+    // Running on development machine (localhost)
     return {
-      API_BASE: `http://localhost:${NETWORK_CONFIG.PORTS.API_SERVER}/api`,
-      FRONTEND_BASE: `http://localhost:${isDevelopment ? NETWORK_CONFIG.PORTS.FRONTEND_DEV : NETWORK_CONFIG.PORTS.FRONTEND_PROD}`,
-      SIMULATOR_BASE: `http://localhost:${NETWORK_CONFIG.PORTS.SIMULATOR}`,
-      VENDING_MACHINE_BASE: `http://${NETWORK_CONFIG.VENDING_MACHINE_IP}:${NETWORK_CONFIG.PORTS.VENDING_MACHINE}`,
+      API_BASE: `http://localhost:${API_PORT}/api`,
+      FRONTEND_BASE: `http://localhost:${FRONTEND_PORT}`,
+      SIMULATOR_BASE: `http://localhost:${SIMULATOR_PORT}`,
+      VENDING_MACHINE_BASE: `http://${VENDING_IP}:${VENDING_PORT}`,
       ENV_TYPE: 'development-local'
     }
   } else {
     // Running on network device (smartphone, tablet, etc.)
+    // Auto-uses the same IP you used to access the page!
     return {
-      API_BASE: `http://${NETWORK_CONFIG.SERVER_IP}:${NETWORK_CONFIG.PORTS.API_SERVER}/api`,
-      FRONTEND_BASE: `http://${NETWORK_CONFIG.SERVER_IP}:${isDevelopment ? NETWORK_CONFIG.PORTS.FRONTEND_DEV : NETWORK_CONFIG.PORTS.FRONTEND_PROD}`,
-      SIMULATOR_BASE: `http://${NETWORK_CONFIG.SERVER_IP}:${NETWORK_CONFIG.PORTS.SIMULATOR}`,
-      VENDING_MACHINE_BASE: `http://${NETWORK_CONFIG.VENDING_MACHINE_IP}:${NETWORK_CONFIG.PORTS.VENDING_MACHINE}`,
-      ENV_TYPE: 'development-network'
+      API_BASE: `http://${serverHost}:${API_PORT}/api`,
+      FRONTEND_BASE: `http://${serverHost}:${FRONTEND_PORT}`,
+      SIMULATOR_BASE: `http://${serverHost}:${SIMULATOR_PORT}`,
+      VENDING_MACHINE_BASE: `http://${VENDING_IP}:${VENDING_PORT}`,
+      ENV_TYPE: 'production-network'
     }
   }
 }

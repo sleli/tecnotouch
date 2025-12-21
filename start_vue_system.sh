@@ -5,6 +5,13 @@
 
 set -e
 
+# Load environment variables if .env exists
+if [ -f .env ]; then
+    set -a  # Auto-export all variables
+    source .env
+    set +a
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -12,11 +19,13 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Configuration
+# Configuration (with fallback to defaults if env vars not set)
 VUE_PROJECT_DIR="frontend-vue"
 BACKEND_DIR="backend"
-API_PORT=8000
-FRONTEND_PORT=3000
+API_PORT="${API_PORT:-8000}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+# DISTRIBUTOR_IP must be set in .env file (no default for security)
+DISTRIBUTOR_IP="${DISTRIBUTOR_IP}"
 
 echo -e "${BLUE}🚀 Distributore Dashboard - Vue.js PWA${NC}"
 echo "=================================="
@@ -80,7 +89,7 @@ elif [ ! -z "$1" ]; then
     echo "Usage: $0 [--ip <IP_ADDRESS>]"
     echo "Examples:"
     echo "  $0                          # Interactive menu"
-    echo "  $0 --ip 192.168.1.65       # Production mode with default IP"
+    echo "  $0 --ip $DISTRIBUTOR_IP       # Production mode with default IP"
     echo "  $0 --ip localhost           # Simulation mode"
     echo "  $0 --ip 192.168.1.100      # Production mode with custom IP"
     exit 1
@@ -113,17 +122,17 @@ clear_cache_and_rebuild
 if [ "$COMMAND_LINE_MODE" != "true" ]; then
     echo ""
     echo "📋 Select mode:"
-    echo "1) 🖥️  Production (connect to real vending machine at 192.168.1.65)"
+    echo "1) 🖥️  Production (connect to real vending machine at $DISTRIBUTOR_IP)"
     echo "2) 🧪 Simulation (use local simulator)"
     echo ""
     read -p "Enter choice (1-2): " MODE
 
     # Set API target based on selection
     if [ "$MODE" = "1" ]; then
-        API_TARGET="192.168.1.65"
+        API_TARGET="$DISTRIBUTOR_IP"
         MODE_NAME="Production"
         echo -e "${GREEN}🏭 Production Mode Selected${NC}"
-        echo "   Target: http://192.168.1.65:1500"
+        echo "   Target: http://$DISTRIBUTOR_IP:1500"
     elif [ "$MODE" = "2" ]; then
         API_TARGET="localhost"
         MODE_NAME="Simulation"

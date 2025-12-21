@@ -7,14 +7,20 @@ Estratto e refactorizzato da download_events.py originale
 import requests
 import json
 from datetime import datetime, timedelta
+import sys
+import os
+
+# Add parent directory to path to import shared
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config import Config
 
 
 class CigaretteMachineClient:
     """Client per comunicare con il distributore di sigarette o simulatore"""
 
-    def __init__(self, base_url="http://192.168.1.65:1500", username="Andrea1976"):
-        self.base_url = base_url
-        self.username = username
+    def __init__(self, base_url=None, username=None):
+        self.base_url = base_url or Config.get_distributor_url()
+        self.username = username or Config.DEFAULT_USERNAME
         self.session = requests.Session()
         # User-Agent necessario - il distributore blocca richieste senza browser reale
         self.session.headers.update({

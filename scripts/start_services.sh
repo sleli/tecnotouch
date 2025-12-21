@@ -4,11 +4,19 @@
 
 set -e  # Exit on error
 
-# Configurazione
-API_PORT=8000
-DASHBOARD_PORT=3000
-SIMULATOR_PORT=1500
-DISTRIBUTORE_IP="192.168.1.65"
+# Load environment variables if .env exists
+if [ -f .env ]; then
+    set -a  # Auto-export all variables
+    source .env
+    set +a
+fi
+
+# Configurazione (with fallback to defaults)
+API_PORT="${API_PORT:-8000}"
+DASHBOARD_PORT="${FRONTEND_PORT:-3000}"
+SIMULATOR_PORT="${SIMULATOR_PORT:-1500}"
+# DISTRIBUTOR_IP must be set in .env file (no default)
+DISTRIBUTORE_IP="${DISTRIBUTOR_IP}"
 
 # Variabili globali per tracking processi
 SIMULATOR_PID=""

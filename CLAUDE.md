@@ -6,6 +6,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Python utility project for downloading events from a cigarette vending machine's web interface. The project consists of a single Python script that interacts with a local web admin panel to extract event data.
 
+## Environment Configuration
+
+This project uses environment variables for all configuration to avoid hardcoded credentials and IPs.
+
+### Quick Setup
+
+1. Copy the example file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` with your network settings:
+   ```bash
+   # Change these IPs if your network is different
+   DISTRIBUTOR_IP=ip_address    # Your vending machine IP
+   SERVER_IP=ip_address         # Your dev machine IP
+   DISTRIBUTOR_USERNAME=Username # Admin username
+   ```
+
+3. Install Python dependency:
+   ```bash
+   pip3 install python-dotenv
+   ```
+
+### Variable Priority
+
+Configuration is loaded in this order (highest to lowest priority):
+
+1. **Command-line arguments** (highest) - `./start_vue_system.sh --ip 192.168.1.100`
+2. **Environment variables** - from `.env` file
+3. **Default values** (fallback) - hardcoded in `shared/config.py`
+
+### Available Variables
+
+See `.env.example` for complete list.
+
+**Required (no defaults):**
+- `DISTRIBUTOR_IP` - Vending machine IP address
+- `DISTRIBUTOR_USERNAME` - Admin username/password
+
+**Optional (have defaults):**
+- `API_PORT` - API server port (default: 8000)
+- `FRONTEND_PORT` - Frontend port (default: 3000)
+- `DISTRIBUTOR_PORT`, `SIMULATOR_PORT` - Connection ports (default: 1500)
+- `DB_PATH` - Database path (default: sales_data.db)
+
+### Frontend Configuration
+
+Frontend uses a single `.env` file in `frontend-vue/`:
+- **Single `.env` file** - Works for both dev (`npm run dev`) and production (`npm run build`)
+- Variables prefixed with `VITE_` are injected at build time
+- **Server IP auto-detected**: Frontend automatically uses `window.location.hostname` - works from any device without configuration!
+- **Only 1 variable required**: `VITE_DISTRIBUTOR_IP` (IP of vending machine)
+
+### Testing Configuration
+
+Verify your environment setup:
+```bash
+python3 scripts/verify_env.py
+```
+
+This shows which values are loaded from `.env` vs defaults.
+
 ## Core Files
 
 - `download_events.py` - Main Python script that handles authentication and event download
@@ -91,26 +154,28 @@ python3 cigarette_machine_simulator.py
 
 ```bash
 # Install required Python packages
-pip3 install requests flask flask-cors
+pip3 install requests flask flask-cors python-dotenv
 ```
 
 ## Architecture
 
-The codebase is structured around a single `EventDownloader` class that:
+The codebase is structured around modular components with centralized configuration:
 
-1. **Authentication**: Handles login to the vending machine's web interface at `192.168.1.65:1500`
+1. **Authentication**: Handles login to the vending machine's web interface (IP from env vars)
 2. **Event Retrieval**: Downloads both HTML pages and JSON event data
 3. **Session Management**: Maintains browser-like session with proper headers and cookies
 4. **Cleanup**: Automatically exits programming mode on the device after operations
 
 ### Key Components
 
-- **EventDownloader class** (`download_events.py:12-200`):
-  - `login()` - Authenticates with hardcoded credentials
-  - `download_events()` - Downloads HTML event page
+- **shared/config.py** - Central configuration module that loads from environment variables
+- **backend/cigarette_machine_client.py** - Client class for communicating with vending machine
+  - `login()` - Authenticates using credentials from Config
+  - `download_events_html()` - Downloads HTML event page
   - `download_events_data()` - Fetches JSON event data via API
-  - `download_and_parse_events()` - Combined HTML + JSON download
   - `exit_programming_mode()` - Safely exits device programming mode
+- **backend/api_server.py** - Flask API server for dashboard
+- **backend/download_events.py** - CLI script for downloading events
 
 ### Output Files
 
@@ -119,35 +184,45 @@ The script generates three types of files:
 - **Complete JSON**: Metadata + events (`events_YYYYMMDD_HHMMSS_complete.json`)
 - **Events-only JSON**: Pure event data (`events_YYYYMMDD_HHMMSS_events_only.json`)
 
-## Configuration
+## Configuration Details
 
-### Credentials
+### Credentials and Network
 
-Default credentials are hardcoded in the `EventDownloader.__init__()` method:
-- Username: `"Andrea1976"`
-- Base URL: `"http://192.168.1.65:1500"`
+All configuration is managed through environment variables. **Do not hardcode credentials in code.**
+
+Default values are defined in `shared/config.py` and can be overridden via:
+1. `.env` file in project root
+2. Command-line arguments (highest priority)
+
+For custom network setup, copy `.env.example` to `.env` and modify the values.
 
 ### Git Configuration
 
-The `.gitignore` excludes all generated output files:
+The `.gitignore` excludes:
 - `*.json` - Event data files
 - `*.html` - Downloaded pages
+- `.env` - Environment variables (local configuration)
 - `.DS_Store` - macOS system files
+
+**Tracked files:**
+- `.env.example` - Template for environment variables
+- `frontend-vue/.env.development` - Frontend dev configuration
+- `frontend-vue/.env.production` - Frontend production configuration
 
 ## Simulator Architecture
 
 The `cigarette_machine_simulator.py` provides a complete Flask-based simulation:
 
-- **Flask server** on port 1500 (same as real device)
-- **Authentication simulation** - accepts password "Andrea1976"
+- **Flask server** - Port configured via `SIMULATOR_PORT` env var (default: 1500)
+- **Authentication simulation** - Password from `DISTRIBUTOR_USERNAME` env var
 - **Event data loading** - uses existing `sample_data.json`
 - **Date filtering** - simulates real API behavior for date ranges
 - **Full endpoint compatibility** - `/login`, `/events2`, `/events2_query`, `/admin_index_back`
 
 ### Simulator vs Real Device
 
-- **Real device**: `python3 download_events.py` → connects to `192.168.1.65:1500`
-- **Simulator**: `python3 download_events.py --simulator` → connects to `localhost:1500`
+- **Real device**: `python3 download_events.py` → connects to IP from `DISTRIBUTOR_IP` env var
+- **Simulator**: `python3 download_events.py --ip localhost` → connects to `localhost:1500`
 - **Identical behavior** - same authentication, API calls, and output files
 
 ## Dashboard Features

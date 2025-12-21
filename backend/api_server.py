@@ -17,6 +17,11 @@ import json
 from datetime import datetime, timedelta
 from data_processor import SalesAnalyzer
 from motor_analytics import MotorAnalytics
+import sys
+
+# Add parent directory to path to import shared
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config import Config
 
 app = Flask(__name__)
 CORS(app)  # Abilita CORS per dashboard statica
@@ -34,8 +39,8 @@ download_status = {
     'error': None
 }
 
-# Variabile globale per IP distributore
-DISTRIBUTORE_IP = "192.168.1.65"
+# Variabile globale per IP distributore (verrà impostata da args.ip)
+DISTRIBUTORE_IP = None
 
 # Lista globale per gestire connessioni SSE
 sse_clients = []
@@ -719,14 +724,14 @@ def api_health():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='API Server per sistema distributore sigarette')
-    parser.add_argument('--ip', default='192.168.1.65',
-                        help='Indirizzo IP del distributore (default: 192.168.1.65, usa "localhost" per simulatore)')
-    parser.add_argument('--port', type=int, default=8000,
-                        help='Porta del server API (default: 8000)')
-    parser.add_argument('--db', default='sales_data.db',
-                        help='Path del database SQLite (default: sales_data.db)')
-    parser.add_argument('--host', default='0.0.0.0',
-                        help='Host per il server (default: 0.0.0.0)')
+    parser.add_argument('--ip', default=Config.DEFAULT_DISTRIBUTOR_IP,
+                        help=f'Indirizzo IP del distributore (default: {Config.DEFAULT_DISTRIBUTOR_IP}, usa "localhost" per simulatore)')
+    parser.add_argument('--port', type=int, default=Config.API_PORT,
+                        help=f'Porta del server API (default: {Config.API_PORT})')
+    parser.add_argument('--db', default=Config.DEFAULT_DB_PATH,
+                        help=f'Path del database SQLite (default: {Config.DEFAULT_DB_PATH})')
+    parser.add_argument('--host', default=Config.API_HOST,
+                        help=f'Host per il server (default: {Config.API_HOST})')
 
     args = parser.parse_args()
 

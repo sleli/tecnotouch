@@ -9,6 +9,11 @@ import json
 import random
 from datetime import datetime, timedelta
 import os
+import sys
+
+# Add parent directory to path to import shared
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config import Config
 
 app = Flask(__name__)
 app.secret_key = 'simulator_secret_key_for_testing'
@@ -72,7 +77,7 @@ class CigaretteMachineSimulator:
         else:
             print("❌ ERRORE: Nessun file eventi reale trovato!")
             print("   Per usare il simulatore, scarica prima degli eventi reali:")
-            print("   python3 download_events.py --ip 192.168.1.65 eventi_reali.html 30")
+            print(f"   python3 download_events.py --ip {Config.DEFAULT_DISTRIBUTOR_IP} eventi_reali.html 30")
             print("   oppure copia il file sample_data.json nella directory simulator/")
             self.events_data = []
 
@@ -152,7 +157,7 @@ LOGIN_PAGE = """
             {% endif %}
         </form>
         <div style="margin-top: 20px; font-size: 12px; color: #666;">
-            <p>💡 Usa password: <strong>Andrea1976</strong></p>
+            <p>💡 Usa password: <strong>{{ password_hint }}</strong></p>
         </div>
     </div>
 </body>
@@ -229,14 +234,14 @@ EVENTS_PAGE = """
 def login_page():
     """Pagina di login"""
     error = request.args.get('error')
-    return render_template_string(LOGIN_PAGE, error=error)
+    return render_template_string(LOGIN_PAGE, error=error, password_hint=Config.DEFAULT_USERNAME)
 
 @app.route('/login_check', methods=['POST'])
 def login_check():
     """Gestisce l'autenticazione"""
     password = request.form.get('password')
 
-    if password == 'Andrea1976':
+    if password == Config.DEFAULT_USERNAME:
         session['authenticated'] = True
         print(f"✅ Login simulato riuscito per password: {password}")
         return render_template_string("""
@@ -347,15 +352,15 @@ if __name__ == '__main__':
     if simulator.date_range:
         print(f"📅 Range dati: {simulator.date_range['start'].strftime('%d/%m/%y')} - {simulator.date_range['end'].strftime('%d/%m/%y')}")
     print(f"📂 File sorgente: {simulator.events_file}")
-    print("🌐 Server in ascolto su: http://localhost:1500")
-    print("🔐 Credenziali test: password = Andrea1976")
+    print(f"🌐 Server in ascolto su: http://localhost:{Config.SIMULATOR_PORT}")
+    print(f"🔐 Credenziali test: password = {Config.DEFAULT_USERNAME}")
     print("=" * 50)
     print("💡 Per testare con lo script:")
     print("   python3 download_events.py --ip localhost")
     print("=" * 50)
 
     try:
-        app.run(host='0.0.0.0', port=1500, debug=True)
+        app.run(host='0.0.0.0', port=Config.SIMULATOR_PORT, debug=True)
     except KeyboardInterrupt:
         print("\n🛑 Simulatore arrestato dall'utente")
     except Exception as e:

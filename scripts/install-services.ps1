@@ -5,11 +5,34 @@
 
 param(
     [string]$ProjectPath = "C:\tecnotouch",
-    [string]$DistributoreIP = "192.168.1.65",
+    [string]$DistributoreIP = "",
     [switch]$IncludeSimulator
 )
 
 $ErrorActionPreference = "Stop"
+
+# Load .env file if exists
+$envFile = Join-Path $ProjectPath ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^([^#][^=]+)=(.*)$') {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            [Environment]::SetEnvironmentVariable($name, $value, 'Process')
+        }
+    }
+    Write-Host "Environment variables loaded from .env" -ForegroundColor Green
+}
+
+# Set DistributoreIP from env var if not provided as parameter
+if ([string]::IsNullOrEmpty($DistributoreIP)) {
+    if ($env:DISTRIBUTOR_IP) {
+        $DistributoreIP = $env:DISTRIBUTOR_IP
+    } else {
+        Write-Error "DISTRIBUTOR_IP not set. Please set it in .env file or pass via -DistributoreIP parameter"
+        exit 1
+    }
+}
 
 Write-Host "===========================================`n" -ForegroundColor Cyan
 Write-Host "Installazione Servizi Dashboard Distributore" -ForegroundColor Cyan

@@ -10,3 +10,11 @@
 # Past events directory
 backend/past_events/
 .vue_pids
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Keep templates
+!.env.example

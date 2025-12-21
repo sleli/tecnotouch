@@ -5,29 +5,33 @@ Configurazioni centralizzate per il sistema distributore sigarette
 
 import os
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+# Carica .env dalla root del progetto
+load_dotenv()
 
 
 class Config:
     """Configurazioni centrali del sistema"""
 
     # Distributore
-    DEFAULT_DISTRIBUTOR_IP = "192.168.1.65"
-    DEFAULT_DISTRIBUTOR_PORT = 1500
-    DEFAULT_USERNAME = "Andrea1976"
+    DEFAULT_DISTRIBUTOR_IP = os.getenv('DISTRIBUTOR_IP')
+    DEFAULT_DISTRIBUTOR_PORT = int(os.getenv('DISTRIBUTOR_PORT', '1500'))
+    DEFAULT_USERNAME = os.getenv('DISTRIBUTOR_USERNAME')
 
     # Simulatore
-    SIMULATOR_HOST = "localhost"
-    SIMULATOR_PORT = 1500
+    SIMULATOR_HOST = os.getenv('SIMULATOR_HOST', 'localhost')
+    SIMULATOR_PORT = int(os.getenv('SIMULATOR_PORT', '1500'))
 
     # API Server
-    API_HOST = "0.0.0.0"
-    API_PORT = 8000
+    API_HOST = os.getenv('API_HOST', '0.0.0.0')
+    API_PORT = int(os.getenv('API_PORT', '8000'))
 
     # Frontend
-    FRONTEND_PORT = 3000
+    FRONTEND_PORT = int(os.getenv('FRONTEND_PORT', '3000'))
 
     # Database
-    DEFAULT_DB_PATH = "sales_data.db"
+    DEFAULT_DB_PATH = os.getenv('DB_PATH', 'sales_data.db')
 
     # File Output
     EVENTS_FILE_PREFIX = "events_"
@@ -76,6 +80,22 @@ class Config:
     def is_simulator_ip(cls, ip: str) -> bool:
         """Verifica se l'IP è quello del simulatore"""
         return ip in ['localhost', '127.0.0.1', 'simulator']
+
+    @classmethod
+    def validate_required(cls):
+        """Valida che le variabili obbligatorie siano impostate"""
+        missing = []
+
+        if not cls.DEFAULT_DISTRIBUTOR_IP:
+            missing.append('DISTRIBUTOR_IP')
+        if not cls.DEFAULT_USERNAME:
+            missing.append('DISTRIBUTOR_USERNAME')
+
+        if missing:
+            raise ValueError(
+                f"Variabili d'ambiente obbligatorie mancanti: {', '.join(missing)}\n"
+                f"Creare file .env copiando .env.example e impostare i valori richiesti."
+            )
 
     @classmethod
     def from_env(cls) -> Dict[str, Any]:

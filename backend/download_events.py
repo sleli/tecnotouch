@@ -5,9 +5,14 @@ Versione refactorizzata che usa CigaretteMachineClient
 """
 
 import sys
+import os
 import json
 from datetime import datetime
 from cigarette_machine_client import CigaretteMachineClient
+
+# Add parent directory to path to import shared
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config import Config
 
 
 def download_and_parse_events(client, output_file=None, days_back=30):
@@ -63,7 +68,7 @@ def main():
     parser.add_argument('output_file', nargs='?', help='Nome file di output (opzionale)')
     parser.add_argument('days_back', nargs='?', type=int, default=30, help='Giorni di eventi da scaricare (default: 30)')
     parser.add_argument('--simulator', action='store_true', help='Usa simulatore localhost (deprecato, usa --ip localhost)')
-    parser.add_argument('--ip', default='192.168.1.65', help='Indirizzo IP del distributore (default: 192.168.1.65)')
+    parser.add_argument('--ip', default=Config.DEFAULT_DISTRIBUTOR_IP, help=f'Indirizzo IP del distributore (default: {Config.DEFAULT_DISTRIBUTOR_IP})')
 
     args = parser.parse_args()
 

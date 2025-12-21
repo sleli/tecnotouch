@@ -1,0 +1,12 @@
+.DS_Store
+*.html
+*.db
+
+# Ignore all JSON files except sample_data.json and .claude settings
+*.json
+!simulator/sample_data.json
+!.claude/settings.local.json
+
+# Past events directory
+backend/past_events/
+.vue_pids

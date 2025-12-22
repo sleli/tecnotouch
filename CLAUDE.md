@@ -49,8 +49,10 @@ See `.env.example` for complete list.
 **Optional (have defaults):**
 - `API_PORT` - API server port (default: 8000)
 - `FRONTEND_PORT` - Frontend port (default: 3000)
-- `DISTRIBUTOR_PORT`, `SIMULATOR_PORT` - Connection ports (default: 1500)
+- `DISTRIBUTOR_PORT` - Distributor connection port (default: 1500)
 - `DB_PATH` - Database path (default: sales_data.db)
+
+**Note:** Simulator always uses `localhost:1500` (hardcoded, no configuration needed)
 
 ### Frontend Configuration
 

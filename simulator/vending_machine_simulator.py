@@ -352,7 +352,7 @@ if __name__ == '__main__':
     if simulator.date_range:
         print(f"📅 Range dati: {simulator.date_range['start'].strftime('%d/%m/%y')} - {simulator.date_range['end'].strftime('%d/%m/%y')}")
     print(f"📂 File sorgente: {simulator.events_file}")
-    print(f"🌐 Server in ascolto su: http://localhost:{Config.SIMULATOR_PORT}")
+    print(f"🌐 Server in ascolto su: http://localhost:1500")
     print(f"🔐 Credenziali test: password = {Config.DEFAULT_USERNAME}")
     print("=" * 50)
     print("💡 Per testare con lo script:")
@@ -360,7 +360,7 @@ if __name__ == '__main__':
     print("=" * 50)
 
     try:
-        app.run(host='0.0.0.0', port=Config.SIMULATOR_PORT, debug=True)
+        app.run(host='0.0.0.0', port=1500, debug=True)
     except KeyboardInterrupt:
         print("\n🛑 Simulatore arrestato dall'utente")
     except Exception as e:

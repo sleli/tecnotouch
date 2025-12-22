@@ -19,10 +19,6 @@ class Config:
     DEFAULT_DISTRIBUTOR_PORT = int(os.getenv('DISTRIBUTOR_PORT', '1500'))
     DEFAULT_USERNAME = os.getenv('DISTRIBUTOR_USERNAME')
 
-    # Simulatore
-    SIMULATOR_HOST = os.getenv('SIMULATOR_HOST', 'localhost')
-    SIMULATOR_PORT = int(os.getenv('SIMULATOR_PORT', '1500'))
-
     # API Server
     API_HOST = os.getenv('API_HOST', '0.0.0.0')
     API_PORT = int(os.getenv('API_PORT', '8000'))
@@ -63,11 +59,6 @@ class Config:
         """Genera URL distributore"""
         ip = ip or cls.DEFAULT_DISTRIBUTOR_IP
         return f"http://{ip}:{cls.DEFAULT_DISTRIBUTOR_PORT}"
-
-    @classmethod
-    def get_simulator_url(cls) -> str:
-        """Genera URL simulatore"""
-        return f"http://{cls.SIMULATOR_HOST}:{cls.SIMULATOR_PORT}"
 
     @classmethod
     def get_api_url(cls, host: str = None, port: int = None) -> str:

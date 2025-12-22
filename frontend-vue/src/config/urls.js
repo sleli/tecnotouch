@@ -6,8 +6,6 @@
 // Read from Vite env vars (injected at build time)
 const VENDING_IP = import.meta.env.VITE_DISTRIBUTOR_IP
 const API_PORT = import.meta.env.VITE_API_PORT || '8000'
-const FRONTEND_PORT = import.meta.env.VITE_FRONTEND_PORT || '3000'
-const SIMULATOR_PORT = import.meta.env.VITE_SIMULATOR_PORT || '1500'
 const VENDING_PORT = import.meta.env.VITE_VENDING_MACHINE_PORT || '1500'
 
 // Validate required environment variables
@@ -27,8 +25,6 @@ function getEnvironmentConfig() {
   const isDevelopment = import.meta.env.DEV
 
   // Auto-detect server IP from current URL
-  // If you open http://192.168.1.18:3000, hostname is "192.168.1.18"
-  // If you open http://localhost:3000, hostname is "localhost"
   const serverHost = hostname
 
   console.log('🌍 URL Config - Hostname:', hostname, '| Dev:', isDevelopment, '| Localhost:', isLocalhost)
@@ -37,8 +33,6 @@ function getEnvironmentConfig() {
     // Running on development machine (localhost)
     return {
       API_BASE: `http://localhost:${API_PORT}/api`,
-      FRONTEND_BASE: `http://localhost:${FRONTEND_PORT}`,
-      SIMULATOR_BASE: `http://localhost:${SIMULATOR_PORT}`,
       VENDING_MACHINE_BASE: `http://${VENDING_IP}:${VENDING_PORT}`,
       ENV_TYPE: 'development-local'
     }
@@ -47,8 +41,6 @@ function getEnvironmentConfig() {
     // Auto-uses the same IP you used to access the page!
     return {
       API_BASE: `http://${serverHost}:${API_PORT}/api`,
-      FRONTEND_BASE: `http://${serverHost}:${FRONTEND_PORT}`,
-      SIMULATOR_BASE: `http://${serverHost}:${SIMULATOR_PORT}`,
       VENDING_MACHINE_BASE: `http://${VENDING_IP}:${VENDING_PORT}`,
       ENV_TYPE: 'production-network'
     }
@@ -60,16 +52,12 @@ export const URL_CONFIG = getEnvironmentConfig()
 
 // Export individual URLs for convenience
 export const API_BASE_URL = URL_CONFIG.API_BASE
-export const FRONTEND_BASE_URL = URL_CONFIG.FRONTEND_BASE
-export const SIMULATOR_BASE_URL = URL_CONFIG.SIMULATOR_BASE
 export const VENDING_MACHINE_BASE_URL = URL_CONFIG.VENDING_MACHINE_BASE
 
 // Log configuration for debugging
 console.log('🚀 URL Configuration loaded:', {
   environment: URL_CONFIG.ENV_TYPE,
   apiBase: API_BASE_URL,
-  frontendBase: FRONTEND_BASE_URL,
-  simulatorBase: SIMULATOR_BASE_URL,
   vendingMachine: VENDING_MACHINE_BASE_URL
 })
 

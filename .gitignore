@@ -2,10 +2,11 @@
 *.html
 *.db
 
-# Ignore all JSON files except sample_data.json and .claude settings
+# Ignore all JSON files except sample_data.json
 *.json
 !simulator/sample_data.json
-!.claude/settings.local.json
+
+.claude/
 
 # Past events directory
 backend/past_events/

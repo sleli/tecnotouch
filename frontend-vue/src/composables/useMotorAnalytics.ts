@@ -158,7 +158,6 @@ export function useMotorAnalytics() {
       }
 
       const data = await response.json()
-      console.log('Analytics refresh initiated:', data.message)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to refresh analytics'
     } finally {

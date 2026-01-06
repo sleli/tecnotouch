@@ -103,7 +103,6 @@ export const useAppStore = defineStore('app', () => {
         throw new Error('API non raggiungibile')
       }
     } catch (error) {
-      console.log('❌ Check API health fallito:', error)
       apiHealthy.value = false
       distributoreHealthy.value = false
       isOnline.value = false
@@ -126,7 +125,6 @@ export const useAppStore = defineStore('app', () => {
     // Re-import to get fresh URL configuration
     import('@/config/urls').then(({ API_BASE_URL }) => {
       apiBase.value = API_BASE_URL
-      console.log('🔄 API URL refreshed:', apiBase.value)
     })
   }
 
@@ -142,9 +140,6 @@ export const useAppStore = defineStore('app', () => {
 
     // Check health ogni 30 secondi
     setInterval(checkApiHealth, 30 * 1000)
-
-    // Log current API configuration for debugging
-    console.log('🚀 App initialized with API URL:', apiBase.value)
   }
 
   return {

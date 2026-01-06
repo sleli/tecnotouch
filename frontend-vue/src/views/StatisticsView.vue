@@ -442,7 +442,6 @@ const displayTopProducts = computed(() => {
 
 const toggleViewMode = () => {
   viewMode.value = viewMode.value === 'tipologia' ? 'marca' : 'tipologia'
-  console.log(`📊 Switched to ${viewMode.value} view`)
 }
 
 const initDateFilter = () => {
@@ -450,7 +449,6 @@ const initDateFilter = () => {
   dateFilter.from = ''
   dateFilter.to = ''
   activeFilter.value = ''
-  console.log('📅 Date filter initialized - no filters (all data)')
 }
 
 const setQuickFilter = async (filterType, autoApply = true) => {
@@ -476,8 +474,6 @@ const setQuickFilter = async (filterType, autoApply = true) => {
       // Keep current dates, don't auto-apply
       return
   }
-
-  console.log(`📅 Quick filter set to ${filterType}:`, { from: dateFilter.from, to: dateFilter.to })
 
   if (autoApply) {
     await loadStatistics()
@@ -507,8 +503,6 @@ const loadStatistics = async () => {
       })
 
       if (overviewData) {
-        console.log('📊 Processing overview data:', overviewData)
-
         stats.totalSales = overviewData.total_sales || 0
         stats.totalRevenue = overviewData.total_revenue || 0
 
@@ -533,10 +527,8 @@ const loadStatistics = async () => {
       const packages = await get(API_ENDPOINTS.STATS_PACKAGE_TYPES, {
         params: params
       })
-      console.log('📦 Package type data received:', packages)
 
       brandStats.value = packages.map(packageType => {
-        console.log('📦 Processing package type:', packageType)
         return {
           name: packageType.package_type,
           sales: packageType.quantity,
@@ -546,7 +538,6 @@ const loadStatistics = async () => {
 
       // Update unique products count from package type data
       stats.uniqueProducts = brandStats.value.length
-      console.log('📊 Updated stats:', { totalSales: stats.totalSales, totalRevenue: stats.totalRevenue, uniqueProducts: stats.uniqueProducts })
     } catch (error) {
       console.error('Failed to load package type stats:', error)
       brandStats.value = []
@@ -580,18 +571,13 @@ const loadChartData = async () => {
     })
 
     if (overviewData?.payment_methods) {
-      console.log('💳 Payment methods data:', overviewData.payment_methods)
-
       chartData.paymentMethods = Object.entries(overviewData.payment_methods).map(([method, data]) => ({
         method: method === 'CASH' ? 'Contanti' : method === 'POS' ? 'Carta' : method,
         amount: data.revenue || 0,
         count: data.count || 0,
         percentage: Math.round((data.revenue / overviewData.total_revenue) * 100) || 0
       }))
-
-      console.log('💳 Processed payment methods:', chartData.paymentMethods)
     } else {
-      console.log('❌ No payment methods data found')
       chartData.paymentMethods = []
     }
   } catch (error) {
@@ -612,8 +598,6 @@ const loadRecentTransactions = async () => {
       params: params
     })
 
-    console.log('🔄 Transactions received:', transactions)
-
     if (Array.isArray(transactions)) {
       recentTransactions.value = transactions.map(transaction => ({
         id: transaction.id,
@@ -622,10 +606,7 @@ const loadRecentTransactions = async () => {
         motor: `Metodo: ${transaction.payment_method}`,
         timestamp: parseTransactionDate(transaction.start_datetime)
       }))
-
-      console.log(`✅ Processed ${recentTransactions.value.length} transactions`)
     } else {
-      console.log('❌ Transactions is not an array:', typeof transactions)
       recentTransactions.value = []
     }
   } catch (error) {
@@ -685,7 +666,6 @@ const exportBrandStats = () => {
 
 const showAllTransactions = async () => {
   try {
-    console.log('🔍 Loading all transactions...')
     loading.value = true
 
     // Load more transactions (increase limit significantly)
@@ -697,8 +677,6 @@ const showAllTransactions = async () => {
       params: params
     })
 
-    console.log('📋 All transactions received:', allTransactions)
-
     if (Array.isArray(allTransactions)) {
       recentTransactions.value = allTransactions.map(transaction => ({
         id: transaction.id,
@@ -707,8 +685,6 @@ const showAllTransactions = async () => {
         motor: `Metodo: ${transaction.payment_method}`,
         timestamp: parseTransactionDate(transaction.start_datetime)
       }))
-
-      console.log(`✅ Loaded ${recentTransactions.value.length} total transactions`)
 
       if (window.$toast) {
         window.$toast.success(`Caricate ${allTransactions.length} transazioni`)
@@ -726,7 +702,6 @@ const showAllTransactions = async () => {
 
 // Lifecycle
 onMounted(() => {
-  console.log('🚀 StatisticsView mounted - timestamp:', new Date().toISOString())
   initDateFilter()
   loadStatistics()
 })

@@ -27,12 +27,10 @@ export function useSSE() {
 
     try {
       const url = `${appStore.apiBase}/events`
-      console.log('🔄 Connecting to SSE:', url)
 
       eventSource = new EventSource(url)
 
       eventSource.onopen = () => {
-        console.log('✅ SSE Connected')
         isConnected.value = true
         error.value = null
         reconnectAttempts = 0 // Reset counter su connessione riuscita
@@ -48,7 +46,6 @@ export function useSSE() {
           reconnectAttempts++
           setTimeout(() => {
             if (!isConnected.value && reconnectAttempts <= maxReconnectAttempts) {
-              console.log(`🔄 Attempting SSE reconnection... (${reconnectAttempts}/${maxReconnectAttempts})`)
               disconnect()
               connect()
             }
@@ -62,31 +59,26 @@ export function useSSE() {
       // Handler per eventi specifici
       eventSource.addEventListener('connected', (event) => {
         const data = JSON.parse(event.data)
-        console.log('📡 SSE Event - Connected:', data)
         executeHandlers('connected', data)
       })
 
       eventSource.addEventListener('download_started', (event) => {
         const data = JSON.parse(event.data)
-        console.log('📡 SSE Event - Download Started:', data)
         executeHandlers('download_started', data)
       })
 
       eventSource.addEventListener('download_progress', (event) => {
         const data = JSON.parse(event.data)
-        console.log('📡 SSE Event - Download Progress:', data)
         executeHandlers('download_progress', data)
       })
 
       eventSource.addEventListener('download_completed', (event) => {
         const data = JSON.parse(event.data)
-        console.log('📡 SSE Event - Download Completed:', data)
         executeHandlers('download_completed', data)
       })
 
       eventSource.addEventListener('download_error', (event) => {
         const data = JSON.parse(event.data)
-        console.log('📡 SSE Event - Download Error:', data)
         executeHandlers('download_error', data)
       })
 
@@ -104,7 +96,6 @@ export function useSSE() {
 
   const disconnect = () => {
     if (eventSource) {
-      console.log('🛑 Disconnecting SSE')
       eventSource.close()
       eventSource = null
       isConnected.value = false

@@ -134,7 +134,6 @@ export const useMotorsStore = defineStore('motors', () => {
   const clearCachedMotors = () => {
     try {
       localStorage.removeItem('cached_motors')
-      console.log('Cleared cached motors from localStorage')
       return true
     } catch (error) {
       console.error('Error clearing cached motors:', error)
@@ -147,14 +146,11 @@ export const useMotorsStore = defineStore('motors', () => {
     try {
       // Only refresh analytics if cache is expired or empty
       if (!analyticsStore.isStatusCacheValid()) {
-        console.log('Refreshing analytics status data...')
-
         // Use the composable to fetch fresh analytics data
         const { useMotorAnalytics } = await import('../composables/useMotorAnalytics')
         const { fetchAllStatus } = useMotorAnalytics()
 
         await fetchAllStatus()
-        console.log('Analytics status refreshed successfully')
       }
     } catch (error) {
       console.warn('Failed to refresh analytics:', error.message)
@@ -174,12 +170,11 @@ export const useMotorsStore = defineStore('motors', () => {
           await fetchMotors()
           // Motors fetch already includes analytics refresh via refreshAnalyticsIfNeeded
         } catch (error) {
-          console.log('Auto-refresh failed, using cached data')
           // Try to refresh analytics independently if motors failed
           try {
             await refreshAnalyticsIfNeeded()
           } catch (analyticsError) {
-            console.log('Analytics auto-refresh also failed')
+            // Silently handle
           }
         }
       }

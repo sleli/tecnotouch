@@ -124,7 +124,6 @@ class SalesAnalyzer:
         try:
             cursor.execute('DROP TABLE IF EXISTS daily_stats')
             cursor.execute('DROP TABLE IF EXISTS product_changes')
-            print("🗑️ Rimosse tabelle inutilizzate: daily_stats, product_changes")
         except sqlite3.OperationalError:
             pass  # Tabelle già rimosse
 
@@ -160,8 +159,6 @@ class SalesAnalyzer:
                     WHERE position IS NULL
                 ''')
 
-            print("✅ Vista analytics motor_analytics_view creata")
-
         except sqlite3.OperationalError as e:
             print(f"⚠️ Errore creazione vista analytics: {e}")
 
@@ -191,7 +188,6 @@ class SalesAnalyzer:
 
         # Ottieni eventi già presenti
         existing_keys = self.get_existing_event_keys()
-        print(f"🔍 Eventi già presenti nel database: {len(existing_keys)}")
 
         # Filtra solo eventi nuovi
         new_events = []
@@ -199,8 +195,6 @@ class SalesAnalyzer:
             event_key = (event.get('number', ''), event.get('dateTime', ''))
             if event_key not in existing_keys:
                 new_events.append(event)
-
-        print(f"✨ Eventi nuovi da importare: {len(new_events)} su {len(events_list)} totali")
 
         # NON salviamo più gli eventi qui - li salveremo dopo aver costruito le transazioni
         # in modo da poter aggiungere il transaction_id corretto
@@ -246,12 +240,8 @@ class SalesAnalyzer:
         if not new_events:
             return [], {}
 
-        print(f"🔨 Costruendo transazioni da {len(new_events)} eventi nuovi")
-
         # Cerca transazione incompleta esistente
         current_transaction = self.get_last_incomplete_transaction()
-        if current_transaction:
-            print(f"🔗 Trovata transazione incompleta da collegare: ID {current_transaction['id']}")
 
         completed_transactions = []
         event_transaction_map = {}  # Mapping (event_number, dateTime) -> transaction_id
@@ -271,7 +261,6 @@ class SalesAnalyzer:
 
                 # Inizia nuova transazione
                 current_transaction = self.start_new_transaction(event)
-                print(f"🆕 Nuova transazione iniziata: {event.get('dateTime', 'N/A')}")
 
             elif current_transaction:
                 # Aggiungi evento alla transazione corrente
@@ -287,7 +276,6 @@ class SalesAnalyzer:
                     event_transaction_map[tx_event_key] = transaction_id
                 completed_transactions.append(current_transaction)
 
-        print(f"✅ Completate {len(completed_transactions)} transazioni")
         return completed_transactions, event_transaction_map
 
     def start_new_transaction(self, start_event):
@@ -399,9 +387,6 @@ class SalesAnalyzer:
         conn.commit()
         conn.close()
 
-        if new_sales > 0:
-            print(f"💾 Salvate {new_sales} vendite per transazione ID {transaction_id}")
-
         return transaction_id
 
     def parse_sale_event(self, event):
@@ -469,9 +454,6 @@ class SalesAnalyzer:
         conn.commit()
         conn.close()
 
-        print(f"💾 Salvate {new_sales} nuove vendite nel database")
-
-
         return new_sales
 
     def update_motor_stats(self):
@@ -499,9 +481,6 @@ class SalesAnalyzer:
 
         conn.commit()
         conn.close()
-
-        print(f"🔄 Aggiornate statistiche per {len(motors_data)} motori")
-
 
     def update_system_status(self, key, value):
         """Aggiorna lo stato del sistema"""
@@ -636,7 +615,6 @@ class SalesAnalyzer:
 
         conn.commit()
         conn.close()
-        print(f"💾 Salvati {new_events} nuovi eventi nel database")
         return new_events
 
     def extract_brand_from_product(self, product_name):
@@ -865,7 +843,6 @@ class SalesAnalyzer:
         conn.commit()
         conn.close()
 
-        print(f"💾 Salvate {new_sales} nuove vendite collegate a transazioni")
         return new_sales
 
     def determine_payment_method(self, payments):
@@ -1025,7 +1002,6 @@ class SalesAnalyzer:
 
     def process_events_file(self, json_file):
         """Processa completamente un file di eventi con import efficiente"""
-        print(f"🔄 Processando file: {json_file}")
 
         if not os.path.exists(json_file):
             print(f"❌ File non trovato: {json_file}")
@@ -1038,7 +1014,6 @@ class SalesAnalyzer:
         new_events = self.import_new_events_only(events_data)
 
         if not new_events:
-            print("✅ Nessun evento nuovo da processare - file già importato")
             # Aggiorna sempre last_download anche se non ci sono eventi nuovi
             # Questo rappresenta l'ultima volta che il sistema ha verificato gli eventi
             self.update_system_status('last_download', datetime.now().isoformat())
@@ -1050,7 +1025,6 @@ class SalesAnalyzer:
         # NUOVO: Salva eventi con transaction_id collegati
         if new_events:
             self.store_all_events(new_events, event_transaction_map)
-            print(f"🔗 Collegati {len(event_transaction_map)} eventi alle transazioni")
 
         # Aggiorna statistiche motori se ci sono stati cambiamenti
         if transactions:
@@ -1091,12 +1065,10 @@ class SalesAnalyzer:
         conn.commit()
         conn.close()
 
-        print(f"✅ Aggiornate {updated_count} vendite esistenti con informazioni marche")
         return updated_count
 
     def backfill_transaction_links(self):
         """Collega eventi esistenti alle transazioni esistenti retroattivamente"""
-        print("🔗 Inizio backfill collegamenti eventi-transazioni...")
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -1110,7 +1082,6 @@ class SalesAnalyzer:
         ''')
 
         events_to_link = cursor.fetchall()
-        print(f"📊 Trovati {len(events_to_link)} eventi da collegare")
 
         if not events_to_link:
             conn.close()
@@ -1124,7 +1095,6 @@ class SalesAnalyzer:
         ''')
 
         transactions = cursor.fetchall()
-        print(f"💰 Trovate {len(transactions)} transazioni esistenti")
 
         # Algoritmo di matching: associa eventi a transazioni basandosi sulla cronologia
         current_transaction_id = None
@@ -1168,8 +1138,6 @@ class SalesAnalyzer:
 
         conn.commit()
         conn.close()
-
-        print(f"✅ Backfill completato: {linked_events} eventi collegati alle transazioni")
         return linked_events
 
 def main():

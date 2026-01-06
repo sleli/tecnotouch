@@ -371,7 +371,6 @@ def send_sse_event(event_type, data):
             pass
 
     sse_clients = active_clients
-    print(f"📡 SSE Event sent: {event_type} to {len(sse_clients)} clients")
 
 @app.route('/api/events')
 def sse_events():
@@ -428,10 +427,6 @@ def cleanup_old_events():
                 if file_time < cutoff_date:
                     os.remove(file_path)
                     removed_count += 1
-                    print(f"🗑️ Rimosso file vecchio: {filename}")
-
-        if removed_count > 0:
-            print(f"🧹 Cleanup completato: {removed_count} file rimossi")
 
     except Exception as e:
         print(f"❌ Errore durante cleanup: {e}")
@@ -511,12 +506,10 @@ def perform_download():
                 # Rimuovi il file _events_only.json se abbiamo usato _complete.json
                 if target_file == complete_file and os.path.exists(json_file):
                     os.remove(json_file)
-                    print(f"🗑️ Rimosso file non necessario: {json_file}")
 
                 # Rimuovi il file _complete.json se abbiamo usato _events_only.json
                 elif target_file == json_file and os.path.exists(complete_file):
                     os.remove(complete_file)
-                    print(f"🗑️ Rimosso file non necessario: {complete_file}")
 
                 # Processa gli eventi dal file archiviato
                 analyzer.process_events_file(archived_file)

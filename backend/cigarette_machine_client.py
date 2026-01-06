@@ -34,7 +34,6 @@ class CigaretteMachineClient:
 
         try:
             # Prima ottieni la pagina di login per stabilire la sessione
-            print("🔗 Caricamento pagina di login...")
             response = self.session.get(login_page_url)
             response.raise_for_status()
 
@@ -53,13 +52,9 @@ class CigaretteMachineClient:
                 'password': self.username
             }
 
-            print("🔐 Effettuando login...")
             # Tentativo di login con URL corretto
             response = self.session.post(login_check_url, data=login_data, headers=headers)
             response.raise_for_status()
-
-            print(f"📊 Response status: {response.status_code}")
-            print(f"🍪 Cookie ricevuti: {len(self.session.cookies)} cookie")
 
             # Verifica se il login è riuscito controllando se non c'è il messaggio di errore
             if "non sei connesso come amministratore" in response.text:
@@ -91,7 +86,6 @@ class CigaretteMachineClient:
                 f.write(response.text)
 
             print(f"✅ Eventi scaricati in: {output_file}")
-            print(f"📄 Dimensione file: {len(response.text)} caratteri")
 
             return output_file
 
@@ -119,8 +113,6 @@ class CigaretteMachineClient:
                 'DNT': '1',
                 'Referer': f'{self.base_url}/events2'
             }
-
-            print(f"🔍 Scaricamento dati eventi (ultimi {days_back} giorni)...")
 
             # Visita prima events2 per stabilire la sessione corretta
             self.session.get(f"{self.base_url}/events2", headers={
@@ -154,10 +146,8 @@ class CigaretteMachineClient:
     def exit_programming_mode(self):
         """Esce dalla modalità programmazione del distributore"""
         try:
-            print("🚪 Uscita dalla modalità programmazione...")
             response = self.session.get(f"{self.base_url}/admin_index_back")
             response.raise_for_status()
-            print("✅ Uscita dalla modalità programmazione completata")
             return True
         except requests.RequestException as e:
             print(f"⚠️  Errore durante l'uscita dalla modalità programmazione: {e}")

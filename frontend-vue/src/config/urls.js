@@ -27,8 +27,6 @@ function getEnvironmentConfig() {
   // Auto-detect server IP from current URL
   const serverHost = hostname
 
-  console.log('🌍 URL Config - Hostname:', hostname, '| Dev:', isDevelopment, '| Localhost:', isLocalhost)
-
   if (isLocalhost) {
     // Running on development machine (localhost)
     return {
@@ -53,12 +51,5 @@ export const URL_CONFIG = getEnvironmentConfig()
 // Export individual URLs for convenience
 export const API_BASE_URL = URL_CONFIG.API_BASE
 export const VENDING_MACHINE_BASE_URL = URL_CONFIG.VENDING_MACHINE_BASE
-
-// Log configuration for debugging
-console.log('🚀 URL Configuration loaded:', {
-  environment: URL_CONFIG.ENV_TYPE,
-  apiBase: API_BASE_URL,
-  vendingMachine: VENDING_MACHINE_BASE_URL
-})
 
 export default URL_CONFIG

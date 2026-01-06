@@ -75,13 +75,8 @@ def main():
     # Gestione compatibilità --simulator
     if args.simulator:
         target_ip = 'localhost'
-        print("🎰 Avvio download eventi dal SIMULATORE...")
     else:
         target_ip = args.ip
-        if target_ip == 'localhost':
-            print("🎰 Avvio download eventi dal SIMULATORE...")
-        else:
-            print(f"🔄 Avvio download eventi dal distributore ({target_ip})...")
 
     base_url = f"http://{target_ip}:1500"
 
@@ -101,11 +96,6 @@ def main():
 
     output_file = args.output_file
     days_back = args.days_back
-
-    if target_ip == 'localhost':
-        print(f"🎰 Cercando eventi dal simulatore (ultimi {days_back} giorni)...")
-    else:
-        print(f"📅 Cercando eventi dal distributore {target_ip} (ultimi {days_back} giorni)...")
 
     # Scarica gli eventi
     result = download_and_parse_events(client, output_file, days_back)

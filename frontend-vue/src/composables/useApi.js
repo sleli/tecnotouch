@@ -27,8 +27,6 @@ export function useApi() {
         }
       }
 
-      console.log('🔄 API Call:', url)
-
       const defaultOptions = {
         method: 'GET',
         headers: {
@@ -46,7 +44,6 @@ export function useApi() {
       }
 
       const data = await response.json()
-      console.log('✅ API Success:', endpoint, data)
 
       return data
     } catch (err) {

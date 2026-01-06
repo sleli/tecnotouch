@@ -160,7 +160,6 @@ const handleAlertClick = (alert) => {
   // If alert is related to a motor, we could navigate to it
   if (alert.motorId) {
     // Could implement motor-specific actions
-    console.log('Alert for motor:', alert.motorId)
   }
 }
 

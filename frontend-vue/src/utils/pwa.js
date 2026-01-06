@@ -38,7 +38,6 @@ export const registerSW = async () => {
 
     // Register service worker
     registration = await wb.register()
-    console.log('Service worker registered successfully')
 
     return registration
   } catch (error) {

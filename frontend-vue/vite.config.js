@@ -12,7 +12,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/(localhost:8000|192\.168\.1\.18:8000)\/api\/.*/i,
+            // Exclude SSE endpoints - they need persistent connections
+            urlPattern: /^https?:\/\/(localhost:8000|192\.168\.1\.18:8000)\/api\/(?!events|sse).*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',

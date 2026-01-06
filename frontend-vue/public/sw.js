@@ -11,8 +11,15 @@ precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
 // API caching strategy - Network first with cache fallback
+// IMPORTANT: Exclude SSE endpoints from caching (they need persistent connections)
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
+  ({ url }) => {
+    // Skip SSE endpoints
+    if (url.pathname === '/api/events' || url.pathname.includes('/api/sse')) {
+      return false
+    }
+    return url.pathname.startsWith('/api/')
+  },
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
@@ -231,13 +238,18 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('message', event => {
   console.log('[SW] Message received:', event.data)
 
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  // Skip if no data (can happen with browser extensions)
+  if (!event.data) {
+    return
+  }
+
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
     return
   }
 
   // Handle offline action queueing
-  if (event.data && event.data.type === 'QUEUE_ACTION') {
+  if (event.data.type === 'QUEUE_ACTION') {
     event.waitUntil(queueAction(event.data.payload))
   }
 })

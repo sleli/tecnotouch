@@ -196,7 +196,6 @@ const loadDashboardStats = async () => {
         dashboardStats.todayRevenue = 0 // API doesn't provide this currently
       }
     } catch (error) {
-      console.log('Using fallback stats calculation')
       dashboardStats.todaySales = 0
       dashboardStats.todayRevenue = 0
     }
@@ -218,7 +217,7 @@ const loadDownloadInfo = async () => {
       appStore.updateLastEventDate(data.last_event_date)
     }
   } catch (error) {
-    console.log('Failed to load download info:', error)
+    // Silently handle - not critical
   }
 }
 
@@ -277,12 +276,11 @@ defineExpose({
 const setupSSEHandlers = () => {
   // Handler per connessione SSE
   sse.onConnected((data) => {
-    console.log('✅ SSE Connected to dashboard')
+    // SSE connected
   })
 
   // Handler per inizio download
   sse.onDownloadStarted((data) => {
-    console.log('📥 Download started:', data)
     downloadLoading.value = true
 
     if (window.$toast) {
@@ -294,8 +292,6 @@ const setupSSEHandlers = () => {
 
   // Handler per progresso download
   sse.onDownloadProgress((data) => {
-    console.log('📈 Download progress:', data)
-
     if (window.$toast && data.progress === 20) {
       window.$toast.info(data.message || 'Download in corso...', {
         title: 'Sincronizzazione'
@@ -305,7 +301,6 @@ const setupSSEHandlers = () => {
 
   // Handler per completamento download
   sse.onDownloadCompleted(async (data) => {
-    console.log('✅ Download completed:', data)
     downloadLoading.value = false
 
     // Aggiorna immediatamente il timestamp di sincronizzazione

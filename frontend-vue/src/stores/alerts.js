@@ -97,7 +97,6 @@ export const useAlertStore = defineStore('alerts', () => {
   const clearAllAlerts = () => {
     alerts.value = []
     unreadCount.value = 0
-    console.log('Cleared all alerts')
   }
 
   return {

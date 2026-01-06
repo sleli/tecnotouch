@@ -1,5 +1,6 @@
 .DS_Store
 *.html
+!frontend-vue/index.html
 *.db
 
 # Ignore all JSON files except essential config files

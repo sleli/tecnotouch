@@ -2,9 +2,12 @@
 *.html
 *.db
 
-# Ignore all JSON files except sample_data.json
+# Ignore all JSON files except essential config files
 *.json
 !simulator/sample_data.json
+!frontend-vue/package.json
+!frontend-vue/package-lock.json
+!.claude/settings.local.json
 
 .claude/
 

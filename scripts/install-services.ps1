@@ -148,8 +148,8 @@ Write-Host "`nInstallazione servizio Backend API..." -ForegroundColor Yellow
 $serviceName = "VendingBackendAPI"
 
 # Rimuovi servizio esistente se presente
-& $nssmPath stop $serviceName 2>$null
-& $nssmPath remove $serviceName confirm 2>$null
+try { & $nssmPath stop $serviceName 2>&1 | Out-Null } catch {}
+try { & $nssmPath remove $serviceName confirm 2>&1 | Out-Null } catch {}
 
 # Installa nuovo servizio (--ip rimosso, leggerà da .env)
 & $nssmPath install $serviceName $pythonPath "$ProjectPath\backend\api_server.py" "--port" "8000" "--host" "0.0.0.0"
@@ -170,8 +170,8 @@ Write-Host "Servizio Backend API installato" -ForegroundColor Green
 Write-Host "`nInstallazione servizio Frontend..." -ForegroundColor Yellow
 $serviceName = "VendingFrontend"
 
-& $nssmPath stop $serviceName 2>$null
-& $nssmPath remove $serviceName confirm 2>$null
+try { & $nssmPath stop $serviceName 2>&1 | Out-Null } catch {}
+try { & $nssmPath remove $serviceName confirm 2>&1 | Out-Null } catch {}
 
 & $nssmPath install $serviceName $pythonPath "-m" "http.server" "3000" "--bind" "0.0.0.0"
 
@@ -190,8 +190,8 @@ Write-Host "Servizio Frontend installato" -ForegroundColor Green
 Write-Host "`nInstallazione servizio Simulator..." -ForegroundColor Yellow
 $serviceName = "VendingSimulator"
 
-& $nssmPath stop $serviceName 2>$null
-& $nssmPath remove $serviceName confirm 2>$null
+try { & $nssmPath stop $serviceName 2>&1 | Out-Null } catch {}
+try { & $nssmPath remove $serviceName confirm 2>&1 | Out-Null } catch {}
 
 & $nssmPath install $serviceName $pythonPath "$ProjectPath\simulator\vending_machine_simulator.py"
 

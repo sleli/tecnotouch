@@ -68,7 +68,30 @@ try {
 }
 Write-Host "Python trovato: $pythonPath" -ForegroundColor Green
 
-# 3. Installa dipendenze Python
+# 3. Verifica Node.js e npm
+Write-Host "`nVerifica Node.js e npm..." -ForegroundColor Yellow
+$nodePath = $null
+try {
+    $nodePath = (Get-Command node).Source
+    $nodeVersion = & node --version
+    Write-Host "Node.js trovato: $nodeVersion" -ForegroundColor Green
+} catch {
+    Write-Error "Node.js non trovato. Installare Node.js LTS da https://nodejs.org"
+    Write-Host "`nIl frontend Vue.js richiede Node.js per il build." -ForegroundColor Yellow
+    exit 1
+}
+
+$npmPath = $null
+try {
+    $npmPath = (Get-Command npm).Source
+    $npmVersion = & npm --version
+    Write-Host "npm trovato: v$npmVersion" -ForegroundColor Green
+} catch {
+    Write-Error "npm non trovato. Reinstallare Node.js da https://nodejs.org"
+    exit 1
+}
+
+# 4. Installa dipendenze Python
 Write-Host "`nInstallazione dipendenze Python..." -ForegroundColor Yellow
 Set-Location "$ProjectPath\backend"
 & $pythonPath -m pip install --upgrade pip --quiet
@@ -80,7 +103,41 @@ if ($IncludeSimulator) {
 }
 Write-Host "Dipendenze installate" -ForegroundColor Green
 
-# 4. Crea directory logs
+# 5. Build frontend Vue.js
+Write-Host "`nPreparazione frontend Vue.js..." -ForegroundColor Yellow
+Set-Location "$ProjectPath\frontend-vue"
+
+# Verifica e installa dipendenze npm
+if (-not (Test-Path "node_modules")) {
+    Write-Host "Installazione dipendenze npm (potrebbe richiedere qualche minuto)..." -ForegroundColor Yellow
+    & npm install
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "npm install fallito. Verificare la connessione internet e riprovare."
+        exit 1
+    }
+    Write-Host "Dipendenze npm installate" -ForegroundColor Green
+} else {
+    Write-Host "Dipendenze npm già presenti" -ForegroundColor Green
+}
+
+# Build production bundle
+Write-Host "Build bundle produzione (potrebbe richiedere qualche minuto)..." -ForegroundColor Yellow
+& npm run build
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "npm run build fallito. Verificare errori sopra."
+    exit 1
+}
+
+# Verifica che dist/ sia stato creato
+if (-not (Test-Path "dist")) {
+    Write-Error "Build fallito - cartella dist/ non creata"
+    exit 1
+}
+
+Write-Host "Frontend compilato con successo" -ForegroundColor Green
+Set-Location $ProjectPath
+
+# 6. Crea directory logs
 $logsPath = "$ProjectPath\logs"
 if (-not (Test-Path $logsPath)) {
     New-Item -ItemType Directory -Path $logsPath | Out-Null
@@ -94,8 +151,8 @@ $serviceName = "VendingBackendAPI"
 & $nssmPath stop $serviceName 2>$null
 & $nssmPath remove $serviceName confirm 2>$null
 
-# Installa nuovo servizio
-& $nssmPath install $serviceName $pythonPath "$ProjectPath\backend\api_server.py" "--ip" $DistributoreIP "--port" "8000" "--host" "0.0.0.0"
+# Installa nuovo servizio (--ip rimosso, leggerà da .env)
+& $nssmPath install $serviceName $pythonPath "$ProjectPath\backend\api_server.py" "--port" "8000" "--host" "0.0.0.0"
 
 # Configurazione servizio
 & $nssmPath set $serviceName AppDirectory "$ProjectPath\backend"
@@ -129,27 +186,25 @@ $serviceName = "VendingFrontend"
 
 Write-Host "Servizio Frontend installato" -ForegroundColor Green
 
-# 7. (Opzionale) Installa servizio Simulator
-if ($IncludeSimulator) {
-    Write-Host "`nInstallazione servizio Simulator..." -ForegroundColor Yellow
-    $serviceName = "VendingSimulator"
+# 7. Installa servizio Simulator (sempre, avvio manuale)
+Write-Host "`nInstallazione servizio Simulator..." -ForegroundColor Yellow
+$serviceName = "VendingSimulator"
 
-    & $nssmPath stop $serviceName 2>$null
-    & $nssmPath remove $serviceName confirm 2>$null
+& $nssmPath stop $serviceName 2>$null
+& $nssmPath remove $serviceName confirm 2>$null
 
-    & $nssmPath install $serviceName $pythonPath "$ProjectPath\simulator\vending_machine_simulator.py"
+& $nssmPath install $serviceName $pythonPath "$ProjectPath\simulator\vending_machine_simulator.py"
 
-    & $nssmPath set $serviceName AppDirectory "$ProjectPath\simulator"
-    & $nssmPath set $serviceName DisplayName "Distributore - Simulator"
-    & $nssmPath set $serviceName Description "Simulatore distributore per testing"
-    & $nssmPath set $serviceName Start SERVICE_DEMAND_START  # Manuale
-    & $nssmPath set $serviceName AppStdout "$logsPath\simulator-stdout.log"
-    & $nssmPath set $serviceName AppStderr "$logsPath\simulator-stderr.log"
-    & $nssmPath set $serviceName AppRotateFiles 1
-    & $nssmPath set $serviceName AppRotateBytes 1048576
+& $nssmPath set $serviceName AppDirectory "$ProjectPath\simulator"
+& $nssmPath set $serviceName DisplayName "Distributore - Simulator"
+& $nssmPath set $serviceName Description "Simulatore distributore per testing"
+& $nssmPath set $serviceName Start SERVICE_DEMAND_START  # Avvio manuale
+& $nssmPath set $serviceName AppStdout "$logsPath\simulator-stdout.log"
+& $nssmPath set $serviceName AppStderr "$logsPath\simulator-stderr.log"
+& $nssmPath set $serviceName AppRotateFiles 1
+& $nssmPath set $serviceName AppRotateBytes 1048576
 
-    Write-Host "Servizio Simulator installato (avvio manuale)" -ForegroundColor Green
-}
+Write-Host "Servizio Simulator installato (avvio manuale)" -ForegroundColor Green
 
 # 8. Configura firewall Windows
 Write-Host "`nConfigurazione firewall Windows..." -ForegroundColor Yellow
@@ -189,13 +244,15 @@ Write-Host "`n===========================================`n" -ForegroundColor Gr
 Write-Host "Installazione completata!" -ForegroundColor Green
 Write-Host "===========================================`n" -ForegroundColor Green
 Write-Host "Servizi installati e avviati:`n"
-Write-Host "  - VendingBackendAPI  (http://localhost:8000)"
-Write-Host "  - VendingFrontend    (http://localhost:3000)"
-if ($IncludeSimulator) {
-    Write-Host "  - VendingSimulator   (http://localhost:1500) [NON AVVIATO]"
-}
+Write-Host "  - VendingBackendAPI  (http://localhost:8000) [AUTO-START]"
+Write-Host "  - VendingFrontend    (http://localhost:3000) [AUTO-START]"
+Write-Host "  - VendingSimulator   (http://localhost:1500) [MANUALE - Non avviato]"
+Write-Host "`nModalità configurata in .env: DISTRIBUTOR_IP=$DistributoreIP"
 Write-Host "`nLog disponibili in: $logsPath"
 Write-Host "`nPer gestire i servizi:"
 Write-Host "  - Gestione Computer > Servizi"
 Write-Host "  - PowerShell: Get-Service Vending*"
+Write-Host "`nPer cambiare modalità:"
+Write-Host "  - Simulazione: switch-to-simulation.bat"
+Write-Host "  - Produzione:  switch-to-production.bat"
 Write-Host "`nDashboard: http://localhost:3000`n"

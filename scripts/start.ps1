@@ -53,7 +53,7 @@ $API_PORT = if ($env:API_PORT) { $env:API_PORT } else { 8000 }
 $FRONTEND_PORT = if ($env:FRONTEND_PORT) { $env:FRONTEND_PORT } else { 3000 }
 $DISTRIBUTOR_IP = $env:DISTRIBUTOR_IP
 
-Write-Header "🚀 Distributore Dashboard - Vue.js PWA"
+Write-Header "Distributore Dashboard - Vue.js PWA"
 Write-Host "==================================`n"
 
 # Function to check if command exists
@@ -74,7 +74,7 @@ function Stop-ProcessOnPort {
     param([int]$Port)
     $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($connections) {
-        Write-Warn "⚠️  Port $Port in use, killing existing process..."
+        Write-Warn "!  Port $Port in use, killing existing process..."
         foreach ($conn in $connections) {
             try {
                 Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
@@ -86,23 +86,23 @@ function Stop-ProcessOnPort {
 
 # Function to clear development cache and rebuild
 function Clear-CacheAndRebuild {
-    Write-Host "🧹 Clearing cache and preparing fresh build...`n"
+    Write-Host " Clearing cache and preparing fresh build...`n"
 
     # Clear Vite cache
     $viteCachePath = Join-Path $VUE_PROJECT_DIR "node_modules\.vite"
     if (Test-Path $viteCachePath) {
         Remove-Item -Path $viteCachePath -Recurse -Force
-        Write-Success "✅ Vite cache cleared"
+        Write-Success " Vite cache cleared"
     }
 
     # Clear old dist for fresh build
     $distPath = Join-Path $VUE_PROJECT_DIR "dist"
     if (Test-Path $distPath) {
         Remove-Item -Path $distPath -Recurse -Force
-        Write-Success "✅ Old dist removed"
+        Write-Success " Old dist removed"
     }
 
-    Write-Success "✅ Cache clearing completed`n"
+    Write-Success " Cache clearing completed`n"
 }
 
 # Parse command line arguments
@@ -123,33 +123,33 @@ if ($ip) {
 }
 
 # Check prerequisites
-Write-Host "🔍 Checking prerequisites...`n"
+Write-Host " Checking prerequisites...`n"
 
 if (-not (Test-CommandExists python)) {
-    Write-Fail "❌ Python not found. Please install Python 3"
+    Write-Fail " Python not found. Please install Python 3"
     exit 1
 }
 
 if (-not (Test-CommandExists node)) {
-    Write-Fail "❌ Node.js not found. Please install Node.js"
+    Write-Fail " Node.js not found. Please install Node.js"
     exit 1
 }
 
 if (-not (Test-CommandExists npm)) {
-    Write-Fail "❌ npm not found. Please install npm"
+    Write-Fail " npm not found. Please install npm"
     exit 1
 }
 
-Write-Success "✅ Prerequisites OK`n"
+Write-Success " Prerequisites OK`n"
 
 # Always clear cache and rebuild
 Clear-CacheAndRebuild
 
 # Interactive mode selection if not provided via command line
 if (-not $MODE) {
-    Write-Host "📋 Select mode:"
-    Write-Host "1) 🖥️  Production (connect to real vending machine at $DISTRIBUTOR_IP)"
-    Write-Host "2) 🧪 Simulation (use local simulator)`n"
+    Write-Host "Select mode:"
+    Write-Host "1)   Production (connect to real vending machine at $DISTRIBUTOR_IP)"
+    Write-Host "2)  Simulation (use local simulator)`n"
 
     $selection = Read-Host "Enter choice (1-2)"
 
@@ -157,52 +157,52 @@ if (-not $MODE) {
         $API_TARGET = $DISTRIBUTOR_IP
         $MODE = 1
         $MODE_NAME = "Production"
-        Write-Success "🏭 Production Mode Selected"
+        Write-Success " Production Mode Selected"
         Write-Host "   Target: http://${API_TARGET}:1500`n"
     } elseif ($selection -eq "2") {
         $API_TARGET = "localhost"
         $MODE = 2
         $MODE_NAME = "Simulation"
-        Write-Info "🧪 Simulation Mode Selected"
+        Write-Info " Simulation Mode Selected"
         Write-Host "   Target: http://localhost:1500`n"
     } else {
-        Write-Fail "❌ Invalid selection"
+        Write-Fail " Invalid selection"
         exit 1
     }
 } else {
-    Write-Success "🖥️  Command Line Mode: $MODE_NAME"
+    Write-Success "  Command Line Mode: $MODE_NAME"
     Write-Host "   Target: http://${API_TARGET}:1500`n"
 }
 
 # Build Vue.js PWA
-Write-Host "🏗️  Building Vue.js PWA...`n"
+Write-Host "  Building Vue.js PWA...`n"
 
 Set-Location $VUE_PROJECT_DIR
 
 if (-not (Test-Path "node_modules")) {
-    Write-Host "📦 Installing dependencies...`n"
+    Write-Host " Installing dependencies...`n"
     npm install
     if ($LASTEXITCODE -ne 0) {
-        Write-Fail "❌ npm install failed"
+        Write-Fail " npm install failed"
         exit 1
     }
 }
 
-Write-Host "🔨 Building production bundle...`n"
+Write-Host " Building production bundle...`n"
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Fail "❌ Build failed"
+    Write-Fail " Build failed"
     exit 1
 }
 
 Set-Location $ProjectPath
 
 if (-not (Test-Path (Join-Path $VUE_PROJECT_DIR "dist"))) {
-    Write-Fail "❌ Build failed - dist directory not found"
+    Write-Fail " Build failed - dist directory not found"
     exit 1
 }
 
-Write-Success "✅ Build completed`n"
+Write-Success " Build completed`n"
 
 # Kill existing processes
 Stop-ProcessOnPort $API_PORT
@@ -213,7 +213,7 @@ if ($MODE -eq 2) {
 }
 
 # Start services
-Write-Host "🚀 Starting services...`n"
+Write-Host " Starting services...`n"
 
 # Array to track PIDs for cleanup
 $global:ProcessPIDs = @()
@@ -221,7 +221,7 @@ $global:ProcessPIDs = @()
 # Cleanup function
 function Stop-AllServices {
     Write-Host "`n"
-    Write-Warn "🛑 Shutting down services..."
+    Write-Warn " Shutting down services..."
 
     foreach ($pid in $global:ProcessPIDs) {
         try {
@@ -243,56 +243,56 @@ function Stop-AllServices {
         Remove-Item $pidFile -Force
     }
 
-    Write-Success "✅ All services stopped"
+    Write-Success " All services stopped"
 }
 
 # Register cleanup on exit
 try {
     # Start simulator if in simulation mode
     if ($MODE -eq 2) {
-        Write-Host "🧪 Starting vending machine simulator...`n"
+        Write-Host " Starting vending machine simulator...`n"
         $simulatorScript = Join-Path $SIMULATOR_DIR "vending_machine_simulator.py"
         $simulatorProcess = Start-Process python -ArgumentList $simulatorScript -WorkingDirectory $SIMULATOR_DIR -PassThru -NoNewWindow -WindowStyle Hidden
         $global:ProcessPIDs += $simulatorProcess.Id
         Start-Sleep -Seconds 3
-        Write-Success "✅ Simulator started (PID: $($simulatorProcess.Id))`n"
+        Write-Success " Simulator started (PID: $($simulatorProcess.Id))`n"
     }
 
     # Start API server
-    Write-Host "🔗 Starting API server...`n"
+    Write-Host " Starting API server...`n"
     $apiArgs = @("api_server.py", "--ip", $API_TARGET, "--port", $API_PORT)
     $apiProcess = Start-Process python -ArgumentList $apiArgs -WorkingDirectory $BACKEND_DIR -PassThru -NoNewWindow -WindowStyle Hidden
     $global:ProcessPIDs += $apiProcess.Id
     Start-Sleep -Seconds 2
-    Write-Success "✅ API server started (PID: $($apiProcess.Id))`n"
+    Write-Success " API server started (PID: $($apiProcess.Id))`n"
 
     # Start frontend
-    Write-Host "🌐 Starting Vue.js frontend...`n"
+    Write-Host " Starting Vue.js frontend...`n"
     $frontendArgs = @("-m", "http.server", $FRONTEND_PORT)
     $frontendDir = Join-Path $VUE_PROJECT_DIR "dist"
     $frontendProcess = Start-Process python -ArgumentList $frontendArgs -WorkingDirectory $frontendDir -PassThru -NoNewWindow -WindowStyle Hidden
     $global:ProcessPIDs += $frontendProcess.Id
     Start-Sleep -Seconds 2
-    Write-Success "✅ Frontend started (PID: $($frontendProcess.Id))`n"
+    Write-Success " Frontend started (PID: $($frontendProcess.Id))`n"
 
     # Service status
     Write-Host ""
-    Write-Success "🎉 System started successfully!"
+    Write-Success " System started successfully!"
     Write-Host "=================================="
-    Write-Info "📊 Dashboard:     http://localhost:$FRONTEND_PORT"
-    Write-Info "🔗 API Server:    http://localhost:$API_PORT"
+    Write-Info " Dashboard:     http://localhost:$FRONTEND_PORT"
+    Write-Info " API Server:    http://localhost:$API_PORT"
 
     if ($MODE -eq 2) {
-        Write-Info "🧪 Simulator:     http://localhost:1500"
+        Write-Info " Simulator:     http://localhost:1500"
     }
 
-    Write-Warn "⚙️  Mode:          $MODE_NAME"
-    Write-Warn "🎯 Target IP:      $API_TARGET"
+    Write-Warn "Mode:           $MODE_NAME"
+    Write-Warn "Target IP:      $API_TARGET"
     Write-Host ""
-    Write-Host "📱 Mobile Access:"
+    Write-Host " Mobile Access:"
     Write-Host "   - Open http://localhost:$FRONTEND_PORT on your phone"
     Write-Host "   - Install as PWA by tapping 'Add to Home Screen'`n"
-    Write-Host "🛑 To stop: Press Ctrl+C`n"
+    Write-Host " To stop: Press Ctrl+C`n"
 
     # Create PID file
     $pidFile = Join-Path $ProjectPath ".vue_pids"
@@ -316,7 +316,7 @@ try {
         }
 
         if (-not $allRunning) {
-            Write-Warn "`n⚠️  One or more services stopped unexpectedly"
+            Write-Warn "`n!  One or more services stopped unexpectedly"
             break
         }
     }

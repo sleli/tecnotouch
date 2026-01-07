@@ -24,11 +24,26 @@ if (Test-Path $envFile) {
 }
 
 # Colors for output
-function Write-Header { Write-Host $args[0] -ForegroundColor Cyan }
-function Write-Success { Write-Host $args[0] -ForegroundColor Green }
-function Write-Warn { Write-Host $args[0] -ForegroundColor Yellow }
-function Write-Fail { Write-Host $args[0] -ForegroundColor Red }
-function Write-Info { Write-Host $args[0] -ForegroundColor Blue }
+function Write-Header {
+    param([string]$Message)
+    Write-Host $Message -ForegroundColor Cyan
+}
+function Write-Success {
+    param([string]$Message)
+    Write-Host $Message -ForegroundColor Green
+}
+function Write-Warn {
+    param([string]$Message)
+    Write-Host $Message -ForegroundColor Yellow
+}
+function Write-Fail {
+    param([string]$Message)
+    Write-Host $Message -ForegroundColor Red
+}
+function Write-Info {
+    param([string]$Message)
+    Write-Host $Message -ForegroundColor Blue
+}
 
 # Configuration (with fallback to defaults if env vars not set)
 $VUE_PROJECT_DIR = "frontend-vue"

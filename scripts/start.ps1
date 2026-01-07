@@ -251,8 +251,8 @@ try {
     # Start simulator if in simulation mode
     if ($MODE -eq 2) {
         Write-Host " Starting vending machine simulator...`n"
-        $simulatorScriptPath = Join-Path $ProjectPath $SIMULATOR_DIR "vending_machine_simulator.py"
         $simulatorWorkDir = Join-Path $ProjectPath $SIMULATOR_DIR
+        $simulatorScriptPath = Join-Path $simulatorWorkDir "vending_machine_simulator.py"
         $simulatorProcess = Start-Process python -ArgumentList $simulatorScriptPath -WorkingDirectory $simulatorWorkDir -PassThru -NoNewWindow
         $global:ProcessPIDs += $simulatorProcess.Id
         Start-Sleep -Seconds 3
@@ -261,8 +261,8 @@ try {
 
     # Start API server
     Write-Host " Starting API server...`n"
-    $apiScriptPath = Join-Path $ProjectPath $BACKEND_DIR "api_server.py"
     $apiWorkDir = Join-Path $ProjectPath $BACKEND_DIR
+    $apiScriptPath = Join-Path $apiWorkDir "api_server.py"
     $apiArgs = @($apiScriptPath, "--ip", $API_TARGET, "--port", $API_PORT)
     $apiProcess = Start-Process python -ArgumentList $apiArgs -WorkingDirectory $apiWorkDir -PassThru -NoNewWindow
     $global:ProcessPIDs += $apiProcess.Id
@@ -271,7 +271,8 @@ try {
 
     # Start frontend
     Write-Host " Starting Vue.js frontend...`n"
-    $frontendDir = Join-Path $ProjectPath $VUE_PROJECT_DIR "dist"
+    $vueProjectPath = Join-Path $ProjectPath $VUE_PROJECT_DIR
+    $frontendDir = Join-Path $vueProjectPath "dist"
     $frontendArgs = @("-m", "http.server", $FRONTEND_PORT)
     $frontendProcess = Start-Process python -ArgumentList $frontendArgs -WorkingDirectory $frontendDir -PassThru -NoNewWindow
     $global:ProcessPIDs += $frontendProcess.Id

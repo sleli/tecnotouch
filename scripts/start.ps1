@@ -223,9 +223,9 @@ function Stop-AllServices {
     Write-Host "`n"
     Write-Warn " Shutting down services..."
 
-    foreach ($pid in $global:ProcessPIDs) {
+    foreach ($processId in $global:ProcessPIDs) {
         try {
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 
@@ -251,8 +251,9 @@ try {
     # Start simulator if in simulation mode
     if ($MODE -eq 2) {
         Write-Host " Starting vending machine simulator...`n"
-        $simulatorScript = Join-Path $SIMULATOR_DIR "vending_machine_simulator.py"
-        $simulatorProcess = Start-Process python -ArgumentList $simulatorScript -WorkingDirectory $SIMULATOR_DIR -PassThru -NoNewWindow
+        $simulatorScriptPath = Join-Path $ProjectPath $SIMULATOR_DIR "vending_machine_simulator.py"
+        $simulatorWorkDir = Join-Path $ProjectPath $SIMULATOR_DIR
+        $simulatorProcess = Start-Process python -ArgumentList $simulatorScriptPath -WorkingDirectory $simulatorWorkDir -PassThru -NoNewWindow
         $global:ProcessPIDs += $simulatorProcess.Id
         Start-Sleep -Seconds 3
         Write-Success " Simulator started (PID: $($simulatorProcess.Id))`n"
@@ -260,16 +261,18 @@ try {
 
     # Start API server
     Write-Host " Starting API server...`n"
-    $apiArgs = @("api_server.py", "--ip", $API_TARGET, "--port", $API_PORT)
-    $apiProcess = Start-Process python -ArgumentList $apiArgs -WorkingDirectory $BACKEND_DIR -PassThru -NoNewWindow
+    $apiScriptPath = Join-Path $ProjectPath $BACKEND_DIR "api_server.py"
+    $apiWorkDir = Join-Path $ProjectPath $BACKEND_DIR
+    $apiArgs = @($apiScriptPath, "--ip", $API_TARGET, "--port", $API_PORT)
+    $apiProcess = Start-Process python -ArgumentList $apiArgs -WorkingDirectory $apiWorkDir -PassThru -NoNewWindow
     $global:ProcessPIDs += $apiProcess.Id
     Start-Sleep -Seconds 2
     Write-Success " API server started (PID: $($apiProcess.Id))`n"
 
     # Start frontend
     Write-Host " Starting Vue.js frontend...`n"
+    $frontendDir = Join-Path $ProjectPath $VUE_PROJECT_DIR "dist"
     $frontendArgs = @("-m", "http.server", $FRONTEND_PORT)
-    $frontendDir = Join-Path $VUE_PROJECT_DIR "dist"
     $frontendProcess = Start-Process python -ArgumentList $frontendArgs -WorkingDirectory $frontendDir -PassThru -NoNewWindow
     $global:ProcessPIDs += $frontendProcess.Id
     Start-Sleep -Seconds 2
@@ -307,8 +310,8 @@ try {
 
         # Check if processes are still running
         $allRunning = $true
-        foreach ($pid in $global:ProcessPIDs) {
-            $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+        foreach ($processId in $global:ProcessPIDs) {
+            $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
             if (-not $proc) {
                 $allRunning = $false
                 break

@@ -26,8 +26,8 @@ if (Test-Path $envFile) {
 # Colors for output
 function Write-Header { Write-Host $args[0] -ForegroundColor Cyan }
 function Write-Success { Write-Host $args[0] -ForegroundColor Green }
-function Write-Warning { Write-Host $args[0] -ForegroundColor Yellow }
-function Write-Error { Write-Host $args[0] -ForegroundColor Red }
+function Write-Warn { Write-Host $args[0] -ForegroundColor Yellow }
+function Write-Fail { Write-Host $args[0] -ForegroundColor Red }
 function Write-Info { Write-Host $args[0] -ForegroundColor Blue }
 
 # Configuration (with fallback to defaults if env vars not set)
@@ -59,7 +59,7 @@ function Stop-ProcessOnPort {
     param([int]$Port)
     $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($connections) {
-        Write-Warning "⚠️  Port $Port in use, killing existing process..."
+        Write-Warn "⚠️  Port $Port in use, killing existing process..."
         foreach ($conn in $connections) {
             try {
                 Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
@@ -111,17 +111,17 @@ if ($ip) {
 Write-Host "🔍 Checking prerequisites...`n"
 
 if (-not (Test-CommandExists python)) {
-    Write-Error "❌ Python not found. Please install Python 3"
+    Write-Fail "❌ Python not found. Please install Python 3"
     exit 1
 }
 
 if (-not (Test-CommandExists node)) {
-    Write-Error "❌ Node.js not found. Please install Node.js"
+    Write-Fail "❌ Node.js not found. Please install Node.js"
     exit 1
 }
 
 if (-not (Test-CommandExists npm)) {
-    Write-Error "❌ npm not found. Please install npm"
+    Write-Fail "❌ npm not found. Please install npm"
     exit 1
 }
 
@@ -151,7 +151,7 @@ if (-not $MODE) {
         Write-Info "🧪 Simulation Mode Selected"
         Write-Host "   Target: http://localhost:1500`n"
     } else {
-        Write-Error "❌ Invalid selection"
+        Write-Fail "❌ Invalid selection"
         exit 1
     }
 } else {
@@ -168,7 +168,7 @@ if (-not (Test-Path "node_modules")) {
     Write-Host "📦 Installing dependencies...`n"
     npm install
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "❌ npm install failed"
+        Write-Fail "❌ npm install failed"
         exit 1
     }
 }
@@ -176,14 +176,14 @@ if (-not (Test-Path "node_modules")) {
 Write-Host "🔨 Building production bundle...`n"
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "❌ Build failed"
+    Write-Fail "❌ Build failed"
     exit 1
 }
 
 Set-Location $ProjectPath
 
 if (-not (Test-Path (Join-Path $VUE_PROJECT_DIR "dist"))) {
-    Write-Error "❌ Build failed - dist directory not found"
+    Write-Fail "❌ Build failed - dist directory not found"
     exit 1
 }
 
@@ -206,7 +206,7 @@ $global:ProcessPIDs = @()
 # Cleanup function
 function Stop-AllServices {
     Write-Host "`n"
-    Write-Warning "🛑 Shutting down services..."
+    Write-Warn "🛑 Shutting down services..."
 
     foreach ($pid in $global:ProcessPIDs) {
         try {
@@ -271,8 +271,8 @@ try {
         Write-Info "🧪 Simulator:     http://localhost:1500"
     }
 
-    Write-Warning "⚙️  Mode:          $MODE_NAME"
-    Write-Warning "🎯 Target IP:      $API_TARGET"
+    Write-Warn "⚙️  Mode:          $MODE_NAME"
+    Write-Warn "🎯 Target IP:      $API_TARGET"
     Write-Host ""
     Write-Host "📱 Mobile Access:"
     Write-Host "   - Open http://localhost:$FRONTEND_PORT on your phone"
@@ -301,7 +301,7 @@ try {
         }
 
         if (-not $allRunning) {
-            Write-Warning "`n⚠️  One or more services stopped unexpectedly"
+            Write-Warn "`n⚠️  One or more services stopped unexpectedly"
             break
         }
     }

@@ -22,7 +22,7 @@ This project uses environment variables for all configuration to avoid hardcoded
    # Change these IPs if your network is different
    DISTRIBUTOR_IP=ip_address    # Your vending machine IP
    SERVER_IP=ip_address         # Your dev machine IP
-   DISTRIBUTOR_USERNAME=Username # Admin username
+   DISTRIBUTOR_PASSWORD=Username # Admin username
    ```
 
 3. Install Python dependency:
@@ -44,7 +44,7 @@ See `.env.example` for complete list.
 
 **Required (no defaults):**
 - `DISTRIBUTOR_IP` - Vending machine IP address
-- `DISTRIBUTOR_USERNAME` - Admin username/password
+- `DISTRIBUTOR_PASSWORD` - Admin username/password
 
 **Optional (have defaults):**
 - `API_PORT` - API server port (default: 8000)
@@ -237,7 +237,7 @@ The `.gitignore` excludes:
 The `cigarette_machine_simulator.py` provides a complete Flask-based simulation:
 
 - **Flask server** - Port configured via `SIMULATOR_PORT` env var (default: 1500)
-- **Authentication simulation** - Password from `DISTRIBUTOR_USERNAME` env var
+- **Authentication simulation** - Password from `DISTRIBUTOR_PASSWORD` env var
 - **Event data loading** - uses existing `sample_data.json`
 - **Date filtering** - simulates real API behavior for date ranges
 - **Full endpoint compatibility** - `/login`, `/events2`, `/events2_query`, `/admin_index_back`
@@ -323,3 +323,299 @@ backend/           → API server Python
 cd frontend-vue/dist && python3 -m http.server 3000 &
 cd backend && python3 api_server.py --ip 0.0.0.0 --port 8000 &
 ```
+
+## Docker Deployment
+
+### Quick Start
+
+Il progetto include una configurazione Docker completa con 3 container indipendenti:
+- **Frontend**: Vue.js + nginx (porta 3000)
+- **Backend**: Flask API server (porta 8000)
+- **Simulator**: Flask simulator per testing (porta 1500)
+
+#### Setup Iniziale
+
+```bash
+# 1. Copia il file di configurazione (stesso file usato per esecuzione locale!)
+cp .env.example .env
+
+# 2. Modifica .env con le tue impostazioni
+# - Per TESTING/DEVELOPMENT: DISTRIBUTOR_IP=localhost (auto-convertito a "simulator" in Docker)
+# - Per PRODUCTION: DISTRIBUTOR_IP=192.168.1.65 (IP del tuo distributore)
+```
+
+**IMPORTANTE**: Il sistema usa **un solo file `.env`** sia per esecuzione locale che Docker!
+- `DISTRIBUTOR_IP=localhost` → In Docker diventa automaticamente `simulator` (container)
+- `DISTRIBUTOR_IP=192.168.1.65` → Funziona identico in locale e Docker
+
+#### Comandi Docker
+
+```bash
+# SIMULATION MODE (con simulatore per testing)
+docker-compose --profile simulation up
+
+# PRODUCTION MODE (connessione a distributore reale)
+docker-compose up
+
+# Avvio in background (detached mode)
+docker-compose --profile simulation up -d
+
+# Vedere i logs
+docker-compose logs -f              # Tutti i servizi
+docker-compose logs -f backend      # Solo backend
+docker-compose logs -f frontend     # Solo frontend
+
+# Fermare tutti i container
+docker-compose down
+
+# Fermare e rimuovere anche i volumi (ATTENZIONE: cancella database!)
+docker-compose down -v
+
+# Rebuild dopo modifiche al codice
+docker-compose build
+docker-compose up --build
+```
+
+#### Gestione Container Individuale
+
+```bash
+# Avviare solo il simulatore (per sviluppo)
+docker-compose up simulator
+
+# Avviare solo backend (se frontend già in esecuzione)
+docker-compose up backend
+
+# Fermare un singolo container
+docker-compose stop backend
+docker-compose stop frontend
+docker-compose stop simulator
+
+# Riavviare un container
+docker-compose restart backend
+```
+
+### Architettura Docker
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Docker Network                       │
+│                  (tecnotouch-network)                   │
+│                                                         │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────┐ │
+│  │  Frontend    │    │   Backend    │    │Simulator │ │
+│  │  (nginx)     │◄───┤   (Flask)    │◄───┤ (Flask)  │ │
+│  │  Port 3000   │    │   Port 8000  │    │Port 1500 │ │
+│  └──────────────┘    └──────────────┘    └──────────┘ │
+│                            │                            │
+│                            ▼                            │
+│                   ┌─────────────────┐                  │
+│                   │  Docker Volumes │                  │
+│                   │  - db-data      │                  │
+│                   │  - event-archives│                 │
+│                   └─────────────────┘                  │
+└─────────────────────────────────────────────────────────┘
+          │                                    │
+     Port 3000                            Port 1500
+      (Frontend)                         (Simulator)
+```
+
+**Comunicazione interna:**
+- Frontend nginx fa proxy delle chiamate `/api/*` → `http://backend:8000`
+- Backend si connette a `DISTRIBUTOR_IP:1500` (può essere `simulator` o IP reale)
+- Tutti i container condividono la stessa rete Docker
+
+**Volumi persistenti:**
+- `db-data`: Database SQLite (`sales_data.db`)
+- `event-archives`: Archivio eventi ultimi 30 giorni (`backend/past_events/`)
+
+### Modalità Development vs Production
+
+#### Development Mode (con hot-reload)
+
+In `docker-compose.yml`, i volumi sono configurati per montare il codice sorgente:
+
+```yaml
+volumes:
+  - ./backend:/app          # Hot-reload per modifiche backend
+  - ./shared:/app/shared    # Hot-reload per configurazione
+```
+
+Questo permette di modificare il codice e vedere i cambiamenti senza rebuild.
+
+**Vantaggi:**
+- Modifiche immediate visibili
+- Sviluppo più veloce
+- Debug più semplice
+
+**Svantaggi:**
+- Performance leggermente ridotte
+- Non identico all'ambiente production
+
+#### Production Mode (solo artifacts)
+
+Per production, commenta i volumi di hot-reload in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - db-data:/app/data
+  - event-archives:/app/past_events
+  # - ./backend:/app          # COMMENTATO per production
+  # - ./shared:/app/shared    # COMMENTATO per production
+```
+
+Poi rebuild:
+
+```bash
+docker-compose --env-file .env.docker build
+docker-compose --env-file .env.docker up -d
+```
+
+### Scenari d'uso Comuni
+
+#### 1. Testing in Tabaccheria (senza distributore reale)
+
+```bash
+# Setup
+cp .env.example .env
+# Modifica: DISTRIBUTOR_IP=localhost (auto-convertito a "simulator" in Docker)
+
+# Avvio
+docker-compose --profile simulation up
+
+# Accesso
+http://localhost:3000  # Dashboard
+```
+
+#### 2. Produzione in Tabaccheria (distributore reale)
+
+```bash
+# Setup
+cp .env.example .env
+# Modifica: DISTRIBUTOR_IP=192.168.1.65
+# Modifica: DISTRIBUTOR_PASSWORD=tua_password
+
+# Avvio
+docker-compose up -d
+
+# Accesso
+http://localhost:3000  # Dashboard
+```
+
+#### 3. Sviluppo con Simulatore sempre attivo
+
+```bash
+# Terminal 1: Avvia simulatore
+docker-compose up simulator
+
+# Terminal 2: Lavora su frontend/backend
+# (oppure avvia anche gli altri container)
+docker-compose up frontend backend
+
+# Accesso
+http://localhost:1500  # Simulatore API
+http://localhost:3000  # Dashboard
+```
+
+#### 4. Switch tra Simulatore e Distributore Reale
+
+```bash
+# Cambio in .env:
+# Da: DISTRIBUTOR_IP=localhost
+# A:  DISTRIBUTOR_IP=192.168.1.65
+
+# Riavvia solo il backend (frontend non serve rebuild)
+docker-compose restart backend
+```
+
+### Troubleshooting Docker
+
+#### Container non si avvia
+
+```bash
+# Vedere i logs per capire l'errore
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs simulator
+
+# Verificare health check
+docker ps  # Controlla lo stato (healthy/unhealthy)
+```
+
+#### Errore "cannot connect to backend"
+
+```bash
+# Verifica che il backend sia healthy
+docker ps | grep backend
+
+# Testa la connessione al backend
+docker exec -it tecnotouch-frontend wget -O- http://backend:8000/health
+
+# Verifica la configurazione nginx
+docker exec -it tecnotouch-frontend cat /etc/nginx/nginx.conf | grep backend
+```
+
+#### Database corrotto o vuoto
+
+```bash
+# Rimuovi il volume e ricrea
+docker-compose down -v
+docker-compose up
+
+# Oppure backup e restore manuale
+docker cp tecnotouch-backend:/app/data/sales_data.db ./backup.db
+docker cp ./backup.db tecnotouch-backend:/app/data/sales_data.db
+```
+
+#### Port già in uso
+
+```bash
+# Cambia porta in .env
+FRONTEND_PORT=3001  # Invece di 3000
+API_PORT=8001       # Invece di 8000
+
+# Riavvia
+docker-compose down
+docker-compose up
+```
+
+#### Rebuild completo (cache cleared)
+
+```bash
+# Ferma tutto
+docker-compose down
+
+# Rimuovi immagini
+docker-compose build --no-cache
+
+# Riavvia
+docker-compose up
+```
+
+### File Docker nel Progetto
+
+```
+.
+├── docker-compose.yml              # Orchestrazione 3 container
+├── .env.example                    # Template configurazione (unificato locale + Docker)
+├── .dockerignore                   # File esclusi dal build (root)
+├── backend/
+│   └── Dockerfile                  # Container Flask API
+├── simulator/
+│   └── Dockerfile                  # Container Flask simulator
+└── frontend-vue/
+    ├── Dockerfile                  # Container Vue.js + nginx
+    ├── .dockerignore               # File esclusi dal build (frontend)
+    └── docker/
+        └── nginx.conf              # Configurazione nginx
+```
+
+### Best Practices Docker
+
+1. **Un solo file `.env`** usato sia per esecuzione locale che Docker (no conflitti!)
+2. **Auto-conversion intelligente**: `DISTRIBUTOR_IP=localhost` → Docker lo converte automaticamente a `simulator`
+3. **Mai committare `.env`** (contiene credenziali)
+4. **Backup regolare** del volume `db-data`
+5. **Monitoring logs** con `docker-compose logs -f`
+6. **Health checks** per verificare stato container
+7. **Profile `simulation`** solo quando serve il simulatore
+8. **Rimuovere volumi** solo se vuoi resettare tutto

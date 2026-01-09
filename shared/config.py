@@ -17,7 +17,10 @@ class Config:
     # Distributore
     DEFAULT_DISTRIBUTOR_IP = os.getenv('DISTRIBUTOR_IP')
     DEFAULT_DISTRIBUTOR_PORT = int(os.getenv('DISTRIBUTOR_PORT', '1500'))
-    DEFAULT_USERNAME = os.getenv('DISTRIBUTOR_USERNAME')
+    DEFAULT_PASSWORD = os.getenv('DISTRIBUTOR_PASSWORD')
+
+    # Docker environment detection
+    IS_DOCKER = os.getenv('DOCKER_ENV', 'false').lower() == 'true'
 
     # API Server
     API_HOST = os.getenv('API_HOST', '0.0.0.0')
@@ -55,9 +58,25 @@ class Config:
     }
 
     @classmethod
+    def normalize_distributor_ip(cls, ip: str = None) -> str:
+        """
+        Normalizza IP distributore basato sull'ambiente
+
+        In Docker: localhost/127.0.0.1 → simulator (nome container)
+        Locale: localhost/127.0.0.1 → localhost (simulatore locale)
+        """
+        ip = ip or cls.DEFAULT_DISTRIBUTOR_IP
+
+        # Se siamo in Docker e l'IP è localhost, usa il nome del container simulator
+        if cls.IS_DOCKER and ip in ['localhost', '127.0.0.1']:
+            return 'simulator'
+
+        return ip
+
+    @classmethod
     def get_distributor_url(cls, ip: str = None) -> str:
         """Genera URL distributore"""
-        ip = ip or cls.DEFAULT_DISTRIBUTOR_IP
+        ip = cls.normalize_distributor_ip(ip)
         return f"http://{ip}:{cls.DEFAULT_DISTRIBUTOR_PORT}"
 
     @classmethod
@@ -68,8 +87,9 @@ class Config:
         return f"http://{host}:{port}"
 
     @classmethod
-    def is_simulator_ip(cls, ip: str) -> bool:
-        """Verifica se l'IP è quello del simulatore"""
+    def is_simulator_ip(cls, ip: str = None) -> bool:
+        """Verifica se l'IP è quello del simulatore (dopo normalizzazione)"""
+        ip = cls.normalize_distributor_ip(ip)
         return ip in ['localhost', '127.0.0.1', 'simulator']
 
     @classmethod
@@ -79,8 +99,8 @@ class Config:
 
         if not cls.DEFAULT_DISTRIBUTOR_IP:
             missing.append('DISTRIBUTOR_IP')
-        if not cls.DEFAULT_USERNAME:
-            missing.append('DISTRIBUTOR_USERNAME')
+        if not cls.DEFAULT_PASSWORD:
+            missing.append('DISTRIBUTOR_PASSWORD')
 
         if missing:
             raise ValueError(

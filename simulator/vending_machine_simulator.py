@@ -234,14 +234,14 @@ EVENTS_PAGE = """
 def login_page():
     """Pagina di login"""
     error = request.args.get('error')
-    return render_template_string(LOGIN_PAGE, error=error, password_hint=Config.DEFAULT_USERNAME)
+    return render_template_string(LOGIN_PAGE, error=error, password_hint=Config.DEFAULT_PASSWORD)
 
 @app.route('/login_check', methods=['POST'])
 def login_check():
     """Gestisce l'autenticazione"""
     password = request.form.get('password')
 
-    if password == Config.DEFAULT_USERNAME:
+    if password == Config.DEFAULT_PASSWORD:
         session['authenticated'] = True
         print(f"✅ Login simulato riuscito per password: {password}")
         return render_template_string("""
@@ -353,7 +353,7 @@ if __name__ == '__main__':
         print(f"📅 Range dati: {simulator.date_range['start'].strftime('%d/%m/%y')} - {simulator.date_range['end'].strftime('%d/%m/%y')}")
     print(f"📂 File sorgente: {simulator.events_file}")
     print(f"🌐 Server in ascolto su: http://localhost:1500")
-    print(f"🔐 Credenziali test: password = {Config.DEFAULT_USERNAME}")
+    print(f"🔐 Credenziali test: password = {Config.DEFAULT_PASSWORD}")
     print("=" * 50)
     print("💡 Per testare con lo script:")
     print("   python3 download_events.py --ip localhost")

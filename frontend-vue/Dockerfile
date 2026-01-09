@@ -15,17 +15,25 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Build arguments for environment variables (injected at build time)
+ARG VITE_DISTRIBUTOR_IP
+ARG VITE_API_PORT=8000
+ARG VITE_VENDING_MACHINE_PORT=1500
+ARG VITE_APP_TITLE="Dashboard Distributore"
+ARG VITE_APP_VERSION="2.0.0"
+
+# Set environment variables for Vite build
+ENV VITE_DISTRIBUTOR_IP=${VITE_DISTRIBUTOR_IP}
+ENV VITE_API_PORT=${VITE_API_PORT}
+ENV VITE_VENDING_MACHINE_PORT=${VITE_VENDING_MACHINE_PORT}
+ENV VITE_APP_TITLE=${VITE_APP_TITLE}
+ENV VITE_APP_VERSION=${VITE_APP_VERSION}
+
 # Build the application
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine AS production
-
-# Install supervisord for running multiple processes
-RUN apk add --no-cache supervisor python3
-
-# Copy supervisor configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+FROM nginx:alpine
 
 # Copy built Vue.js app to nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -33,15 +41,12 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# Create directory for logs
-RUN mkdir -p /var/log/supervisor
-
-# Expose ports
-EXPOSE 80 8000
+# Expose port 80 (frontend)
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
 
-# Start supervisord (manages both nginx and python API server)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

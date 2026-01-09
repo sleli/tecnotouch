@@ -47,7 +47,7 @@ Questa guida ti accompagna nell'installazione del sistema dashboard per il distr
    ```env
    DISTRIBUTOR_IP=192.168.1.65      # IP del distributore reale
    DISTRIBUTOR_PORT=1500
-   DISTRIBUTOR_USERNAME=admin        # Username admin
+   DISTRIBUTOR_PASSWORD=admin        # Username admin
    API_HOST=0.0.0.0
    API_PORT=8000
    FRONTEND_PORT=3000

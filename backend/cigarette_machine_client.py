@@ -18,9 +18,9 @@ from shared.config import Config
 class CigaretteMachineClient:
     """Client per comunicare con il distributore di sigarette o simulatore"""
 
-    def __init__(self, base_url=None, username=None):
+    def __init__(self, base_url=None, password=None):
         self.base_url = base_url or Config.get_distributor_url()
-        self.username = username or Config.DEFAULT_USERNAME
+        self.password = password or Config.DEFAULT_PASSWORD
         self.session = requests.Session()
         # User-Agent necessario - il distributore blocca richieste senza browser reale
         self.session.headers.update({
@@ -49,7 +49,7 @@ class CigaretteMachineClient:
 
             # Dati di login corretti
             login_data = {
-                'password': self.username
+                'password': self.password
             }
 
             # Tentativo di login con URL corretto

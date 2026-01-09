@@ -1,0 +1,108 @@
+services:
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: tecnotouch-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      # Docker environment detection (enables localhost → simulator conversion)
+      - DOCKER_ENV=true
+      - DISTRIBUTOR_IP=${DISTRIBUTOR_IP}
+      - DISTRIBUTOR_PORT=${DISTRIBUTOR_PORT:-1500}
+      - DISTRIBUTOR_PASSWORD=${DISTRIBUTOR_PASSWORD}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DB_PATH=/app/data/sales_data.db
+    volumes:
+      # Persistent database storage
+      - db-data:/app/data
+      # Event archives (past 30 days)
+      - event-archives:/app/past_events
+      # Development hot-reload (comment out for production)
+      - ./backend:/app
+      - ./shared:/app/shared
+    networks:
+      - tecnotouch-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Frontend (Vue.js + nginx)
+  frontend:
+    build:
+      context: ./frontend-vue
+      dockerfile: Dockerfile
+      args:
+        - VITE_DISTRIBUTOR_IP=${DISTRIBUTOR_IP}
+        - VITE_API_PORT=8000
+        - VITE_VENDING_MACHINE_PORT=${DISTRIBUTOR_PORT:-1500}
+        - VITE_APP_TITLE=${VITE_APP_TITLE:-Dashboard Distributore}
+        - VITE_APP_VERSION=${VITE_APP_VERSION:-2.0.0}
+    container_name: tecnotouch-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tecnotouch-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Simulator (optional, for testing without real vending machine)
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    container_name: tecnotouch-simulator
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "1500:1500"
+    environment:
+      - DOCKER_ENV=true
+      - DISTRIBUTOR_PASSWORD=${DISTRIBUTOR_PASSWORD}
+      - SIMULATOR_PORT=1500
+    volumes:
+      # Development hot-reload (comment out for production)
+      - ./simulator:/app
+      - ./shared:/app/shared
+    networks:
+      - tecnotouch-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:1500/')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # Simulator profile (optional service, start only when needed)
+    profiles:
+      - simulation
+      - dev
+
+networks:
+  tecnotouch-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local
+  event-archives:
+    driver: local

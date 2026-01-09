@@ -49,7 +49,7 @@ sse_clients = []
 distributore_ping_cache = {
     'last_check': None,
     'result': False,
-    'cache_duration': 180  # 3 minuti
+    'cache_duration': 10  # 10 secondi (ridotto per maggiore reattività)
 }
 
 # === CORE API ENDPOINTS ===
@@ -460,7 +460,7 @@ def perform_download():
         # Comando per scaricare eventi
         cmd = ["python3", "download_events.py", "--ip", DISTRIBUTORE_IP, output_file, "30"]
 
-        if DISTRIBUTORE_IP == 'localhost':
+        if Config.is_simulator_ip(DISTRIBUTORE_IP):
             download_status['message'] = 'Scaricando dal simulatore...'
         else:
             download_status['message'] = f'Scaricando dal distributore {DISTRIBUTORE_IP}...'
@@ -662,26 +662,32 @@ def api_process_events():
 
 # === HEALTH CHECK ===
 
-def check_distributore_ping():
-    """Verifica connettività con distributore usando ping con cache"""
+def check_distributore_ping(force=False):
+    """Verifica connettività con distributore usando ping con cache
+
+    Args:
+        force (bool): Se True, bypassa la cache e fa un check immediato
+    """
     global distributore_ping_cache, DISTRIBUTORE_IP
 
     now = datetime.now()
 
-    # Controlla se cache è valida
-    if (distributore_ping_cache['last_check'] and
+    # Controlla se cache è valida (solo se force=False)
+    if not force and (distributore_ping_cache['last_check'] and
         (now - distributore_ping_cache['last_check']).total_seconds() < distributore_ping_cache['cache_duration']):
         return distributore_ping_cache['result']
 
     # Esegui ping
     try:
-        if DISTRIBUTORE_IP == 'localhost':
-            # Per simulatore, controlla se porta 1500 è aperta
-            result = subprocess.run(['nc', '-z', 'localhost', '1500'],
+        # Verifica se è un simulatore (localhost, 127.0.0.1, o simulator in Docker)
+        if Config.is_simulator_ip(DISTRIBUTORE_IP):
+            # Per simulatore, controlla se porta 1500 è aperta usando nc
+            # Usa DISTRIBUTOR_IP direttamente (potrebbe essere 'simulator' in Docker)
+            result = subprocess.run(['nc', '-z', DISTRIBUTORE_IP, '1500'],
                                   capture_output=True, timeout=3)
             ping_success = result.returncode == 0
         else:
-            # Ping reale per distributore
+            # Ping reale ICMP per distributore fisico
             result = subprocess.run(['ping', '-c', '1', '-W', '2000', DISTRIBUTORE_IP],
                                   capture_output=True, timeout=3)
             ping_success = result.returncode == 0
@@ -700,8 +706,15 @@ def check_distributore_ping():
 
 @app.route('/api/health')
 def api_health():
-    """Health check endpoint con stato distributore"""
-    distributore_reachable = check_distributore_ping()
+    """Health check endpoint con stato distributore
+
+    Query params:
+        force (bool): Se True, bypassa la cache e fa un check immediato
+    """
+    # Leggi parametro force dalla query string
+    force = request.args.get('force', 'false').lower() == 'true'
+
+    distributore_reachable = check_distributore_ping(force=force)
 
     return jsonify({
         "status": "healthy",
@@ -710,7 +723,8 @@ def api_health():
         "distributore_ip": DISTRIBUTORE_IP,
         "api_base_url": request.host_url.rstrip('/'),
         "timestamp": datetime.now().isoformat(),
-        "database": analyzer.db_path if analyzer else "not initialized"
+        "database": analyzer.db_path if analyzer else "not initialized",
+        "cached": not force  # Indica se il risultato è cached o fresco
     })
 
 # === MAIN ===
@@ -728,8 +742,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # Imposta IP distributore globale
-    DISTRIBUTORE_IP = args.ip
+    # Imposta IP distributore globale con normalizzazione per Docker
+    # In Docker: localhost → simulator (container name)
+    # Locale: localhost → localhost
+    DISTRIBUTORE_IP = Config.normalize_distributor_ip(args.ip)
 
     # Inizializza analyzer
     analyzer = SalesAnalyzer(args.db)
@@ -737,7 +753,11 @@ if __name__ == '__main__':
     # Inizializza motor analytics
     motor_analytics = MotorAnalytics(args.db)
 
-    mode_text = "SIMULATORE" if args.ip == 'localhost' else f"DISTRIBUTORE {args.ip}"
+    # Mostra modalità usando IP normalizzato
+    mode_text = "SIMULATORE" if Config.is_simulator_ip(DISTRIBUTORE_IP) else f"DISTRIBUTORE {DISTRIBUTORE_IP}"
+    if args.ip != DISTRIBUTORE_IP:
+        # Mostra la conversione se è avvenuta (es. localhost → simulator in Docker)
+        mode_text += f" (da {args.ip})"
 
     print("🚀 Avvio API Server")
     print("=" * 40)

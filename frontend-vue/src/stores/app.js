@@ -78,9 +78,31 @@ export const useAppStore = defineStore('app', () => {
     lastEventDate.value = timestamp
   }
 
-  const checkApiHealth = async () => {
+  const checkApiHealth = async (force = false) => {
     try {
-      const response = await fetch(`${apiBase.value}/health`)
+      // SEMPRE aggiungi timestamp per evitare cache del browser
+      // Se force=true, bypassa anche la cache del backend (10s)
+      const url = force
+        ? `${apiBase.value}/health?force=true&_t=${Date.now()}`
+        : `${apiBase.value}/health?_t=${Date.now()}`
+
+      const fetchOptions = force
+        ? {
+            cache: 'no-cache',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          }
+        : {
+            cache: 'no-store',  // Impedisce cache anche per check normali
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          }
+
+      const response = await fetch(url, fetchOptions)
       if (response.ok) {
         const data = await response.json()
 

@@ -184,7 +184,8 @@ const formatTimestamp = (timestamp) => {
 const refreshStatus = async () => {
   isRefreshing.value = true
   try {
-    await appStore.checkApiHealth()
+    // Passa force=true per bypassare la cache e avere dati freschi
+    await appStore.checkApiHealth(true)
 
     // Toast notification se disponibile
     if (window.$toast) {

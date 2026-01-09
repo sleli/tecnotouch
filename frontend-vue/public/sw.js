@@ -11,11 +11,15 @@ precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
 // API caching strategy - Network first with cache fallback
-// IMPORTANT: Exclude SSE endpoints from caching (they need persistent connections)
+// IMPORTANT: Exclude endpoints that need real-time status
 registerRoute(
   ({ url }) => {
-    // Skip SSE endpoints
+    // Skip SSE endpoints (persistent connections)
     if (url.pathname === '/api/events' || url.pathname.includes('/api/sse')) {
+      return false
+    }
+    // Skip health endpoint (must always check real status)
+    if (url.pathname === '/api/health') {
       return false
     }
     return url.pathname.startsWith('/api/')
